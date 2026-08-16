@@ -60,11 +60,11 @@ const px = await page.evaluate(async () => {
   };
   return { bg: s(10, 10), bowl: s(195, 500) };
 });
-check('fond cahier crème rendu', px && Math.abs(px.bg[0] - 245) < 12 && Math.abs(px.bg[1] - 239) < 12, px?.bg.join(','));
+check('fond cahier rendu', px && px.bg[0] > 240 && px.bg[1] > 228, px?.bg.join(','));
 
 // --- Navigation vers le jeu ---
 const k = 844 / 1280;
-await page.touchscreen.tap(195, 980 * k);
+await page.touchscreen.tap(195, 900 * k);
 await new Promise((r) => setTimeout(r, 1800));
 state = await page.evaluate(() => {
   const game = window.__game;
@@ -88,7 +88,7 @@ const pxGame = await page.evaluate(async () => {
   off.height = snap.height;
   const ctx = off.getContext('2d');
   ctx.drawImage(snap, 0, 0);
-  const d = ctx.getImageData(Math.round((195 / 390) * snap.width), Math.round((760 / 844) * snap.height), 1, 1).data;
+  const d = ctx.getImageData(Math.round((195 / 390) * snap.width), Math.round((640 / 844) * snap.height), 1, 1).data;
   return [d[0], d[1], d[2]];
 });
 check(
@@ -165,10 +165,14 @@ await new Promise((r) => setTimeout(r, 1200));
 const setupRes = await page.evaluate(() => {
   try {
     const gs = window.__game.scene.getScene('Game');
-    gs.spawnFruit(5, 175, 690);
-    gs.spawnFruit(6, 215, 690);
-    // Épinglage : les fruits ne roulent pas vers le centre du V
-    for (const f of gs.fruits) f.body.isStatic = true;
+    gs.spawnFruit(5, 175, 630);
+    gs.spawnFruit(6, 215, 630);
+    // Épinglage : statiques ET éveillés (un statique endormi ne génère
+    // aucune paire de collision avec les fruits qui tombent)
+    for (const f of gs.fruits) {
+      f.body.isStatic = true;
+      f.body.isSleeping = false;
+    }
     return 'ok';
   } catch (e) {
     return `ERR: ${e.message}`;
@@ -254,7 +258,7 @@ check('best score persisté (localStorage)', bestSaved !== null && parseInt(best
 
 // --- Interface : REJOUER → Game, MENU → panneaux ---
 // REJOUER (bouton sous le panneau GameOver)
-await page.touchscreen.tap(195, 784);
+await page.touchscreen.tap(195, 649);
 await new Promise((r) => setTimeout(r, 1500));
 const replayState = await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
@@ -270,8 +274,8 @@ check('carte NEXT synchronisée', replayState.nextShown === true);
 await page.evaluate(() => window.__game.scene.getScene('Game').scene.start('Menu'));
 await new Promise((r) => setTimeout(r, 1200));
 
-// FRUITS panel (bouton FRUITS à 756)
-await page.touchscreen.tap(195, 756);
+// FRUITS panel (bouton FRUITS à 677)
+await page.touchscreen.tap(195, 677);
 await new Promise((r) => setTimeout(r, 600));
 const fruitsPanel = await page.evaluate(() => window.__game.scene.getScene('Menu').panel !== undefined);
 check('panneau FRUITS ouvert', fruitsPanel === true);
@@ -280,8 +284,8 @@ await new Promise((r) => setTimeout(r, 600));
 const fruitsClosed = await page.evaluate(() => window.__game.scene.getScene('Menu').panel === undefined);
 check('panneau FRUITS fermé', fruitsClosed === true);
 
-// PARAMÈTRES (bouton à 840) : toggle SON
-await page.touchscreen.tap(195, 840);
+// PARAMÈTRES (bouton à 762) : toggle SON
+await page.touchscreen.tap(195, 762);
 await new Promise((r) => setTimeout(r, 600));
 await page.touchscreen.tap(195, 323);
 await new Promise((r) => setTimeout(r, 300));
@@ -294,8 +298,8 @@ check('toggle SON persisté (on)', soundOn === '1', `sound=${soundOn}`);
 await page.touchscreen.tap(195, 679);
 await new Promise((r) => setTimeout(r, 600));
 
-// JOUER depuis le menu (bouton à 672)
-await page.touchscreen.tap(195, 672);
+// JOUER depuis le menu (bouton à 593)
+await page.touchscreen.tap(195, 593);
 await new Promise((r) => setTimeout(r, 1200));
 const backInGame = await page.evaluate(() => ({
   active: window.__game.scene.getScenes(true).map((s) => s.scene.key),

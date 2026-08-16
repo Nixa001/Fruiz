@@ -84,6 +84,32 @@ export class MenuScene extends Phaser.Scene {
     const sub = UIHelpers.makeText(this, w / 2, 425 * k, '✦ SÉNÉGAL ✦', 52 * k, '#c94f3d');
     sub.setStroke('#ffffff', 7 * k);
 
+    // Titre vivant : balancement arcade
+    this.tweens.add({
+      targets: [title, title2],
+      angle: { from: -1.6, to: 1.6 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Étincelles ambiantes qui montent
+    this.add
+      .particles(0, 0, 'p_dot', {
+        x: { min: 0, max: w },
+        y: this.scale.height + 12,
+        lifespan: 7000,
+        speedY: { min: -45, max: -90 },
+        speedX: { min: -16, max: 16 },
+        scale: { start: 0.55 * k, end: 0 },
+        alpha: { start: 0.35, end: 0 },
+        frequency: 480,
+        quantity: 2,
+        tint: [0xffd54f, 0xffecb3, 0xa5d6a7, 0xffab91],
+      })
+      .setDepth(2);
+
     // Mascotte pastèque vivante
     const mascotY = 670 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
@@ -110,7 +136,7 @@ export class MenuScene extends Phaser.Scene {
     const y0 = 900 * k;
     const gap = 128 * k;
 
-    UIHelpers.makeButton(
+    const playBtn = UIHelpers.makeButton(
       this,
       { x: w / 2, y: y0, width: bw, height: bh, label: 'JOUER', fill: 0xffd54f, radius: 26 * k },
       () => {
@@ -119,6 +145,15 @@ export class MenuScene extends Phaser.Scene {
         this.scene.start('Game');
       },
     );
+    // Le bouton JOUER attire l'œil : pulsation douce
+    this.tweens.add({
+      targets: playBtn,
+      scale: 1.045,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
     UIHelpers.makeButton(
       this,
       { x: w / 2, y: y0 + gap, width: bw, height: bh, label: 'FRUITS', fill: 0xa5d6a7, radius: 26 * k },

@@ -87,6 +87,7 @@ export class GameScene extends Phaser.Scene {
 
     this.layout();
     this.drawBackground();
+    this.buildDoodles();
     this.buildWalls();
     this.drawBowl();
     this.drawPhysicsDebug();
@@ -225,6 +226,30 @@ export class GameScene extends Phaser.Scene {
     UIHelpers.drawNotebookBackground(this, this.bgGraphics, this.scaleK);
   }
 
+  /** Fruits décoratifs flottants (ambiance arcade, derrière le bol). */
+  private buildDoodles(): void {
+    const k = this.scaleK;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const specs: [string, number, number, number][] = [
+      ['fruit_2', 0.32, 42 * k, h * 0.34],
+      ['fruit_8', 0.3, w - 42 * k, h * 0.4],
+      ['fruit_4', 0.28, 38 * k, h * 0.56],
+    ];
+    for (const [tex, alpha, x, y] of specs) {
+      const img = this.add.image(x, y, tex).setScale(k * 0.3).setAlpha(alpha).setDepth(0.6);
+      this.tweens.add({
+        targets: img,
+        y: y + 14 * k,
+        angle: 10,
+        duration: 2200 + Math.random() * 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+  }
+
   /**
    * Dessine la calebasse : coquille en DEMI-CERCLE (fond arrondi, pas de pointe),
    * intérieur crème, rebord épais, rayures radiales.
@@ -284,6 +309,11 @@ export class GameScene extends Phaser.Scene {
     // Reflet haut-gauche de la coquille
     g.fillStyle(0xffffff, 0.13);
     g.fillEllipse(cx - R * 0.45, rimTop + R * 0.3, R * 0.3, R * 0.14);
+    // Liseré brillant le long de la coquille (haut-gauche)
+    g.lineStyle(9 * k, 0xffffff, 0.16);
+    g.beginPath();
+    g.arc(cx, rimTop, RShell - 12 * k, Math.PI * 0.12, Math.PI * 0.55, false);
+    g.strokePath();
   }
 
   /**

@@ -15,15 +15,25 @@ export interface ButtonOptions {
 
 /** Helpers UI cartoon partagés entre les scènes. */
 export class UIHelpers {
-  /** Fond "feuille quadrillée de cahier" (identité du jeu). */
+  /** Fond "feuille quadrillée de cahier" + ciel dégradé chaud (arcade douce). */
   static drawNotebookBackground(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, scaleK: number): void {
     g.clear();
     const w = scene.scale.width;
     const h = scene.scale.height;
-    g.fillStyle(0xf5efdf, 1);
-    g.fillRect(0, 0, w, h);
+    // ciel dégradé pêche → crème
+    const topC = 0xfff3d6;
+    const bottomC = 0xf5efdf;
+    const bands = 8;
+    for (let i = 0; i < bands; i++) {
+      const t = i / (bands - 1);
+      const r = Math.round(((topC >> 16) & 0xff) + (((bottomC >> 16) & 0xff) - ((topC >> 16) & 0xff)) * t);
+      const gg = Math.round(((topC >> 8) & 0xff) + (((bottomC >> 8) & 0xff) - ((topC >> 8) & 0xff)) * t);
+      const b = Math.round((topC & 0xff) + ((bottomC & 0xff) - (topC & 0xff)) * t);
+      g.fillStyle((r << 16) | (gg << 8) | b, 1);
+      g.fillRect(0, Math.floor((h * i) / bands), w, Math.ceil(h / bands) + 1);
+    }
     const step = 44 * scaleK;
-    g.lineStyle(1, 0x000000, 0.05);
+    g.lineStyle(1, 0x000000, 0.045);
     for (let x = step; x < w; x += step) {
       g.lineBetween(x, 0, x, h);
     }
@@ -31,7 +41,7 @@ export class UIHelpers {
       g.lineBetween(0, y, w, y);
     }
     // marge rouge façon cahier
-    g.lineStyle(2, 0xe57373, 0.22);
+    g.lineStyle(2, 0xe57373, 0.2);
     g.lineBetween(54 * scaleK, 0, 54 * scaleK, h);
   }
 

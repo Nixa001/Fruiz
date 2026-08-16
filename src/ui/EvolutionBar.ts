@@ -9,7 +9,7 @@ export class EvolutionBar {
   private sprites: Phaser.GameObjects.Image[] = [];
   private lastTier = 0;
 
-  constructor(private scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene) {
     const k = scene.scale.height / 1280;
     const w = scene.scale.width;
     const y = scene.scale.height - 140 * k;

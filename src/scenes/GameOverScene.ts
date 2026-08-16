@@ -46,6 +46,15 @@ export class GameOverScene extends Phaser.Scene {
     const title = UIHelpers.makeText(this, 0, -ph / 2 + 85 * k, 'GAME OVER', 84 * k, '#e53935');
     title.setStroke('#ffffff', 8 * k);
     panel.add(title);
+    // Titre arcade qui tremble légèrement
+    this.tweens.add({
+      targets: title,
+      angle: { from: -2, to: 2 },
+      duration: 220,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     // Fruit le plus haut atteint
     const bestTier = data.bestTier;
