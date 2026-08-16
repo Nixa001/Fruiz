@@ -3,7 +3,7 @@
 Jeu mobile casual de fusion de fruits (style Watermelon Game), avec des fruits-personnages
 expressifs inspirés de l'esprit de Ball Guys, et une identité sénégalaise :
 
-**Gigibier → Arachide → Ditakh → Goyave → Tol → Pomme → Mangue → Coco → Papaye → Ananas → Pastèque**
+**Gigibier → Soump → Ditakh → Goyave → Tol → Bouye → Kola → Coco → New → Karité → Pastèque**
 
 Les fruits tombent dans une **calebasse** : col resserré, ventre large, rebord épais.
 Un fruit qui **déborde au-dessus du rebord** plus d'une seconde → game over.

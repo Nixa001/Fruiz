@@ -215,7 +215,7 @@ export class GameScene extends Phaser.Scene {
     // Calebasse peu profonde, large, en bas de l'écran (façon Ball Guys) :
     // on remplit, un fruit déborde → game over. Taille réduite de 20% ×2.
     // Remontée pour laisser la place à la barre d'évolution des fruits en bas.
-    const halfW = Math.min(w * 0.46, 330 * k) * 0.64;
+    const halfW = Math.min(w * 0.46, 330 * k) * 0.7;
     this.containerLeft = this.cx - halfW;
     this.containerRight = this.cx + halfW;
     this.containerBottom = h - 300 * k;
@@ -391,9 +391,9 @@ export class GameScene extends Phaser.Scene {
       collisionFilter: { category: WALL_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
     };
 
-    const rInner = R - 8 * k;
+    const rInner = R - 4 * k;
     const circleR = 0.01 * k;
-    const arcCircles = 70;
+    const arcCircles = 100;
     for (let i = 0; i <= arcCircles; i++) {
       const t = (i / arcCircles) * Math.PI;
       const body = Matter.Bodies.circle(cx + rInner * Math.cos(t), rimTop + rInner * Math.sin(t), circleR, base);

@@ -2,24 +2,25 @@ import { FruitDefinition } from '../types/GameTypes';
 
 /**
  * Les 11 fruits du jeu — identité sénégalaise.
+ * Couleurs proches du fruit réel, mais diversifiées pour un rendu attrayant.
  * Ajouter un fruit = ajouter une définition ici. Rien d'autre à toucher :
  * le système de fusion, le rendu et le score sont génériques.
  */
 export const FRUITS: FruitDefinition[] = [
-  { id: 1, name: 'Gigibier', radius: 22, color: 0xc94f3d, colorDark: 0x8e2f22, score: 10, shape: 'circle', spawnWeight: 30 },
-  { id: 2, name: 'Arachide', radius: 27, color: 0xd9b477, colorDark: 0xa97f45, score: 20, shape: 'peanut', spawnWeight: 24 },
-  { id: 3, name: 'Ditakh', radius: 33, color: 0x5d8a2e, colorDark: 0x3f611e, score: 30, shape: 'circle', spawnWeight: 18 },
-  { id: 4, name: 'Goyave', radius: 39, color: 0xa4c639, colorDark: 0x6b8e23, score: 40, shape: 'circle', spawnWeight: 12 },
-  { id: 5, name: 'Tol', radius: 45, color: 0x43a047, colorDark: 0x2e7031, score: 50, shape: 'circle', spawnWeight: 8 },
-  { id: 6, name: 'Pomme', radius: 59, color: 0xe53935, colorDark: 0xa62828, score: 80, shape: 'apple', spawnWeight: 0 },
-  { id: 7, name: 'Mangue', radius: 67, color: 0xff8f00, colorDark: 0xc25e00, score: 100, shape: 'mango', spawnWeight: 0 },
-  { id: 8, name: 'Coco', radius: 75, color: 0x8d6e63, colorDark: 0x5f4439, score: 150, shape: 'circle', spawnWeight: 0 },
-  { id: 9, name: 'Papaye', radius: 84, color: 0xff7a45, colorDark: 0xd14e24, score: 200, shape: 'papaya', spawnWeight: 0 },
-  { id: 10, name: 'Ananas', radius: 93, color: 0xf6c244, colorDark: 0xc98f1b, score: 300, shape: 'ananas', spawnWeight: 0 },
-  { id: 11, name: 'Pastèque', radius: 104, color: 0x2f8f46, colorDark: 0x1e6b31, score: 500, shape: 'watermelon', spawnWeight: 0 },
+  { id: 1, name: 'Gigibier', radius: 22, color: 0xd95535, colorDark: 0x9c3620, score: 10, shape: 'circle', spawnWeight: 30 },
+  { id: 2, name: 'Soump', radius: 27, color: 0x7e57c2, colorDark: 0x543a8a, score: 20, shape: 'circle', spawnWeight: 24 },
+  { id: 3, name: 'Ditakh', radius: 33, color: 0x558b2f, colorDark: 0x3a611d, score: 30, shape: 'circle', spawnWeight: 18 },
+  { id: 4, name: 'Goyave', radius: 39, color: 0xcddc39, colorDark: 0x9eaa1c, score: 40, shape: 'circle', spawnWeight: 0 },
+  { id: 5, name: 'Tol', radius: 45, color: 0xff9f1c, colorDark: 0xc26a00, score: 50, shape: 'circle', spawnWeight: 0 },
+  { id: 6, name: 'Bouye', radius: 59, color: 0x9c8f52, colorDark: 0x6e6432, score: 80, shape: 'circle', spawnWeight: 0 },
+  { id: 7, name: 'Kola', radius: 67, color: 0xa0522d, colorDark: 0x70361a, score: 100, shape: 'circle', spawnWeight: 0 },
+  { id: 8, name: 'Coco', radius: 75, color: 0x7a5c4e, colorDark: 0x533e34, score: 150, shape: 'circle', spawnWeight: 0 },
+  { id: 9, name: 'New', radius: 84, color: 0xdfa83f, colorDark: 0xae7c1f, score: 200, shape: 'circle', spawnWeight: 0 },
+  { id: 10, name: 'Karité', radius: 93, color: 0x7fb83a, colorDark: 0x588a24, score: 300, shape: 'circle', spawnWeight: 0 },
+  { id: 11, name: 'Pastèque', radius: 104, color: 0x2f9e44, colorDark: 0x1e6b2e, score: 500, shape: 'watermelon', spawnWeight: 0 },
 ];
 
-/** Fruits pouvant apparaître comme fruit à lancer (tiers 1-5). */
+/** Fruits pouvant apparaître comme fruit à lancer (tiers 1-3). */
 export const SPAWNABLE_TIERS = FRUITS.filter((f) => f.spawnWeight > 0);
 
 /** Score bonus quand deux pastèques fusionnent (elles disparaissent). */

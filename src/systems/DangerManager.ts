@@ -23,7 +23,9 @@ export class DangerManager {
     if (this.triggered) return;
     const cx = this.scene.cx;
     const rimTop = this.scene.containerTop;
-    const rimRadius = (this.scene.containerRight - this.scene.containerLeft) / 2;
+    // Silhouette du bol : demi-ellipse (rayon X = demi-largeur, rayon Y = hauteur)
+    const rimRadiusX = (this.scene.containerRight - this.scene.containerLeft) / 2;
+    const rimRadiusY = this.scene.containerBottom - rimTop;
     const screenH = this.scene.scale.height;
 
     for (const fruit of fruits) {
@@ -41,9 +43,9 @@ export class DangerManager {
       }
       // En dessous du rebord mais hors de la silhouette du bol : échappé
       if (p.y > rimTop + 10) {
-        const dx = p.x - cx;
-        const dy = p.y - rimTop;
-        if (dx * dx + dy * dy > rimRadius * rimRadius) {
+        const nx = (p.x - cx) / rimRadiusX;
+        const ny = (p.y - rimTop) / rimRadiusY;
+        if (nx * nx + ny * ny > 1) {
           this.trigger();
           return;
         }
