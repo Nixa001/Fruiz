@@ -12,7 +12,7 @@ export class EvolutionBar {
   constructor(scene: Phaser.Scene) {
     const k = scene.scale.height / 1280;
     const w = scene.scale.width;
-    const y = scene.scale.height - 140 * k;
+    const y = scene.scale.height - 200 * k;
     const margin = 14 * k;
     const slot = (w - margin * 2) / FRUITS.length;
 

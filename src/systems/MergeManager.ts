@@ -95,6 +95,7 @@ export class MergeManager {
 
   /** Fusions manquées par les événements : deux fruits de même niveau qui se touchent. */
   private proximityScan(): void {
+    if (this.scene.paused) return;
     const fruits = this.scene.fruits;
     for (let i = 0; i < fruits.length; i++) {
       const a = fruits[i];

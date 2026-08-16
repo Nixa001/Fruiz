@@ -30,6 +30,11 @@ export class GameScene extends Phaser.Scene {
   containerLeft = 0;
   containerRight = 0;
   private previewY = 0;
+  /** Partie en pause (bouton pause). */
+  paused = false;
+  private pauseOverlay?: Phaser.GameObjects.Container;
+  private pauseResumeBtn?: Phaser.GameObjects.Container;
+  private pauseMenuBtn?: Phaser.GameObjects.Container;
 
   fruits: Fruit[] = [];
   private walls: MatterBody[] = [];
@@ -45,6 +50,7 @@ export class GameScene extends Phaser.Scene {
   private dropLocked = false;
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private escKey?: Phaser.Input.Keyboard.Key;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
   private pendingNextReveal: Fruit | null = null;
   private dropSpawnY = 0;
@@ -73,6 +79,10 @@ export class GameScene extends Phaser.Scene {
     this.pointerDown = false;
     this.gameOverTriggered = false;
     this.pendingNextReveal = null;
+    this.paused = false;
+    this.pauseOverlay = undefined;
+    this.pauseResumeBtn = undefined;
+    this.pauseMenuBtn = undefined;
 
     // Physique ferme : les fruits se poussent sans se superposer
     const engine = this.matter.world.engine;
@@ -118,6 +128,9 @@ export class GameScene extends Phaser.Scene {
     // Débloque l'audio au premier geste (exigence navigateurs mobiles)
     this.input.once('pointerdown', () => audioManager.unlock());
 
+    // Bouton pause (haut centre) + overlay REPRENDRE / MENU
+    this.buildPauseButton();
+
     this.currentTier = rollSpawnTier();
     this.nextTier = rollSpawnTier();
     this.refreshPreview();
@@ -129,7 +142,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(): void {
-    // Clavier (test desktop) : flèches + espace
+    if (this.paused) {
+      if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) this.togglePause();
+      return;
+    }
+    // Clavier (test desktop) : flèches + espace, Échap = pause
+    if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) {
+      this.togglePause();
+    }
     if (this.keys) {
       const step = 12 * this.scaleK;
       if (this.keys.left.isDown) {
@@ -198,7 +218,7 @@ export class GameScene extends Phaser.Scene {
     const halfW = Math.min(w * 0.46, 330 * k) * 0.64;
     this.containerLeft = this.cx - halfW;
     this.containerRight = this.cx + halfW;
-    this.containerBottom = h - 240 * k;
+    this.containerBottom = h - 300 * k;
     this.containerTop = this.containerBottom - halfW;
     // Le fruit est lancé depuis le haut, mais descendu pour réduire la chute
     this.previewY = 300 * k;
@@ -380,6 +400,19 @@ export class GameScene extends Phaser.Scene {
       Matter.Composite.add(engine.world, body);
       this.walls.push(body);
     }
+
+    // Petites butées d'angle au rebord (gauche et droite) :
+    // rattrapent les fruits lâchés trop près des bords, qui rebondissent
+    // dessus et roulent dans le bol (visibles en rouge dans le debug)
+    const cornerR = 14 * k;
+    const corners = [
+      Matter.Bodies.circle(this.containerLeft - 8 * k, rimTop + 16 * k, cornerR, base),
+      Matter.Bodies.circle(this.containerRight + 8 * k, rimTop + 16 * k, cornerR, base),
+    ];
+    for (const body of corners) {
+      Matter.Composite.add(engine.world, body);
+      this.walls.push(body);
+    }
   }
 
   // ---------- preview + contrôles ----------
@@ -417,9 +450,10 @@ export class GameScene extends Phaser.Scene {
   private updatePreviewPosition(): void {
     const k = this.scaleK;
     const r = getFruit(this.currentTier).radius * k;
-    // +30k : marge pour le col resserré de la calebasse (évite les drops sur le rebord)
-    const minX = this.containerLeft + r + 30 * k;
-    const maxX = this.containerRight - r - 30 * k;
+    // Course : le fruit peut dépasser un peu les bords du bol
+    // (lâché trop loin, il rebondit sur le rebord et roule dedans)
+    const minX = this.containerLeft + r - 40 * k;
+    const maxX = this.containerRight - r + 40 * k;
     this.previewX = Phaser.Math.Clamp(this.previewX, minX, maxX);
     this.previewGroup.setPosition(this.previewX, this.previewY);
     this.drawGuide();
@@ -458,6 +492,7 @@ export class GameScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     if (kb) {
       this.keys = kb.createCursorKeys();
+      this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     }
   }
 
@@ -468,7 +503,7 @@ export class GameScene extends Phaser.Scene {
 
   private dropCurrent(): void {
     // Pas de lancer tant que le fruit précédent n'a pas atteint la mi-parcours
-    if (this.dropLocked || this.pendingNextReveal) return;
+    if (this.dropLocked || this.pendingNextReveal || this.paused) return;
     this.dropLocked = true;
     this.time.delayedCall(220, () => {
       this.dropLocked = false;
@@ -490,6 +525,131 @@ export class GameScene extends Phaser.Scene {
     Matter.Composite.add(this.matter.world.engine.world, fruit.body);
     this.fruits.push(fruit);
     return fruit;
+  }
+
+  // ---------- pause ----------
+
+  private buildPauseButton(): void {
+    const k = this.scaleK;
+    UIHelpers.makeButton(
+      this,
+      {
+        x: this.scale.width / 2,
+        y: 62 * k,
+        width: 92 * k,
+        height: 92 * k,
+        label: '❚❚',
+        fill: 0xffecb3,
+        radius: 22 * k,
+        depth: 25,
+        fontSize: Math.round(36 * k),
+      },
+      () => {
+        audioManager.playButton();
+        this.togglePause();
+      },
+    );
+  }
+
+  togglePause(): void {
+    this.paused = !this.paused;
+    if (this.paused) {
+      this.matter.world.pause();
+      this.showPauseOverlay();
+    } else {
+      // Les boutons sont créés en absolu (input fiable) : à détruire à part
+      this.pauseResumeBtn?.destroy();
+      this.pauseMenuBtn?.destroy();
+      this.pauseResumeBtn = undefined;
+      this.pauseMenuBtn = undefined;
+      this.pauseOverlay?.destroy();
+      this.pauseOverlay = undefined;
+      this.matter.world.resume();
+      // Anti "tap-through" : le tap sur REPRENDRE ne doit pas lâcher un fruit
+      this.pointerDown = false;
+      this.dropLocked = true;
+      this.time.delayedCall(300, () => {
+        this.dropLocked = false;
+      });
+    }
+  }
+
+  private showPauseOverlay(): void {
+    if (this.pauseOverlay) return;
+    const k = this.scaleK;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    const overlay = this.add.container(0, 0).setDepth(80);
+    const dim = this.add.rectangle(cx, cy, w, h, 0x27272f, 0.5).setInteractive();
+    overlay.add(dim);
+
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.2);
+    g.fillRoundedRect(cx - 240 * k + 6 * k, cy - 300 * k + 8 * k, 480 * k, 600 * k, 30 * k);
+    g.fillStyle(0xfff9ec, 1);
+    g.fillRoundedRect(cx - 240 * k, cy - 300 * k, 480 * k, 600 * k, 30 * k);
+    g.lineStyle(6 * k, 0x27272f, 1);
+    g.strokeRoundedRect(cx - 240 * k, cy - 300 * k, 480 * k, 600 * k, 30 * k);
+    overlay.add(g);
+
+    const title = this.add
+      .text(cx, cy - 210 * k, 'PAUSE', {
+        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontSize: `${Math.round(80 * k)}px`,
+        color: '#27272f',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setStroke('#ffffff', 7 * k);
+    overlay.add(title);
+
+    this.pauseOverlay = overlay;
+    overlay.setScale(0.6).setAlpha(0);
+    this.tweens.add({ targets: overlay, scale: 1, alpha: 1, duration: 180, ease: 'Back.easeOut' });
+
+    // Boutons (absolus : input fiable sur mobile)
+    const bw = Math.min(300 * k, w * 0.65);
+    const bh = 96 * k;
+    this.pauseResumeBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy - 60 * k,
+        width: bw,
+        height: bh,
+        label: 'REPRENDRE',
+        fill: 0xffd54f,
+        radius: 24 * k,
+        depth: 85,
+      },
+      () => {
+        audioManager.playButton();
+        this.togglePause();
+      },
+    );
+    this.pauseMenuBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy + 70 * k,
+        width: bw,
+        height: bh,
+        label: 'MENU',
+        fill: 0xffecb3,
+        radius: 24 * k,
+        depth: 85,
+      },
+      () => {
+        audioManager.playButton();
+        this.matter.world.resume();
+        this.paused = false;
+        this.scene.stop();
+        this.scene.start('Menu');
+      },
+    );
   }
 
   // ---------- fin de partie ----------
