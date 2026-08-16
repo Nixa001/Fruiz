@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getFruit } from '../data/FruitData';
 import { FruitDefinition, FruitExpression } from '../types/GameTypes';
 import { FaceController } from './FaceController';
+import { FruitRenderer } from './FruitRenderer';
 
 /** Sous-ensemble typé de la lib matter-js embarquée dans Phaser (Phaser.Physics.Matter.Matter). */
 interface MatterLib {
@@ -36,6 +37,11 @@ export const WALL_LABEL = 'wall';
 export const FRUIT_CATEGORY = 0x0002;
 export const WALL_CATEGORY = 0x0001;
 
+/** Le cercle de collision déborde légèrement du visuel (+10%) :
+ * les contacts sont un peu indulgents, les fusions se déclenchent
+ * juste avant le contact visuel. */
+export const FRUIT_COLLISION_SCALE = 1.1;
+
 export interface FruitOptions {
   /** Facteur d'échelle (adaptation à la taille d'écran). */
   radiusScale: number;
@@ -57,6 +63,8 @@ export class Fruit extends Phaser.GameObjects.Container {
   isRemoved = false;
   /** Dernier impact visuel (anti-spam). */
   lastImpactAt = 0;
+  /** Instant de création (grâce anti-éjection pour la règle d'échappement). */
+  spawnTime = 0;
 
   readonly face: FaceController;
   private sprite: Phaser.GameObjects.Image;
@@ -65,15 +73,17 @@ export class Fruit extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.def = getFruit(tier);
     this.radiusScale = opts.radiusScale;
-    this.physicsRadius = this.def.radius * opts.radiusScale;
+    this.physicsRadius = this.def.radius * opts.radiusScale * FRUIT_COLLISION_SCALE;
+    this.spawnTime = scene.time.now;
 
     this.body = Matter.Bodies.circle(x, y, this.physicsRadius, {
-      friction: 0.4,
+      friction: 0.5,
       frictionStatic: 0.9,
-      restitution: 0.12,
+      restitution: 0.05,
       density: 0.0011,
-      frictionAir: 0.012,
-      sleepThreshold: 40,
+      frictionAir: 0.008,
+      slop: 0.02,
+      sleepThreshold: 60,
       label: FRUIT_LABEL,
       collisionFilter: { category: FRUIT_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
     });
@@ -82,7 +92,9 @@ export class Fruit extends Phaser.GameObjects.Container {
 
     this.sprite = scene.add.image(0, 0, `fruit_${tier}`).setScale(opts.radiusScale);
     this.add(this.sprite);
-    this.face = new FaceController(scene, this.def.radius, opts.radiusScale);
+    // Le visage suit le rayon VISUEL (le corps est dessiné à l'échelle bodyScale)
+    const visualRadius = this.def.radius * FruitRenderer.bodyScale(this.def.shape);
+    this.face = new FaceController(scene, visualRadius, opts.radiusScale);
     this.add(this.face.root);
 
     this.setDepth(10);
@@ -93,6 +105,15 @@ export class Fruit extends Phaser.GameObjects.Container {
   override update(): void {
     // !this.body : fruit détruit par la scène mais encore référencé pendant un shutdown
     if (this.isRemoved || !this.body) return;
+    // Cap de vélocité : évite le tunneling à travers les piles à grande vitesse
+    // (24 px/step < diamètre du plus petit fruit : aucun passage en travers possible)
+    const v = this.body.velocity;
+    const speed = Math.hypot(v.x, v.y);
+    if (speed > 24) {
+      const f = 24 / speed;
+      v.x *= f;
+      v.y *= f;
+    }
     this.setPosition(this.body.position.x, this.body.position.y);
     this.setRotation(this.body.angle);
   }

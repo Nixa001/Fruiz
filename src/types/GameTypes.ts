@@ -30,7 +30,7 @@ export type FruitShape =
 
 /** Définition complète d'un fruit. Le système de fusion est 100% générique. */
 export interface FruitDefinition {
-  /** Niveau de fusion (1 à 12). */
+  /** Niveau de fusion (1 à 11). */
   id: number;
   /** Nom sénégalais affiché. */
   name: string;

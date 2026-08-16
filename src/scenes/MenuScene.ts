@@ -77,15 +77,15 @@ export class MenuScene extends Phaser.Scene {
     const k = this.k;
     const w = this.scale.width;
 
-    const title = UIHelpers.makeText(this, w / 2, 240 * k, 'MERGE', 110 * k, '#27272f');
+    const title = UIHelpers.makeText(this, w / 2, 160 * k, 'MERGE', 110 * k, '#27272f');
     title.setStroke('#ffffff', 10 * k);
-    const title2 = UIHelpers.makeText(this, w / 2, 380 * k, 'FRUITS', 110 * k, '#2f8f46');
+    const title2 = UIHelpers.makeText(this, w / 2, 300 * k, 'FRUITS', 110 * k, '#2f8f46');
     title2.setStroke('#ffffff', 10 * k);
-    const sub = UIHelpers.makeText(this, w / 2, 505 * k, '✦ SÉNÉGAL ✦', 52 * k, '#c94f3d');
+    const sub = UIHelpers.makeText(this, w / 2, 425 * k, '✦ SÉNÉGAL ✦', 52 * k, '#c94f3d');
     sub.setStroke('#ffffff', 7 * k);
 
     // Mascotte pastèque vivante
-    const mascotY = 760 * k;
+    const mascotY = 670 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
     const img = this.add.image(0, 0, 'fruit_12').setScale(k);
     mascot.add(img);
@@ -107,7 +107,7 @@ export class MenuScene extends Phaser.Scene {
     const w = this.scale.width;
     const bw = Math.min(340 * k, w * 0.78);
     const bh = 104 * k;
-    const y0 = 1020 * k;
+    const y0 = 900 * k;
     const gap = 128 * k;
 
     UIHelpers.makeButton(
@@ -166,7 +166,7 @@ export class MenuScene extends Phaser.Scene {
     container.add(g);
 
     const title = this.add
-      .text(0, -ph / 2 + 60 * k, 'LES 12 FRUITS', {
+      .text(0, -ph / 2 + 60 * k, 'LES FRUITS', {
         fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(44 * k)}px`,
         color: '#2f8f46',

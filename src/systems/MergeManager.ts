@@ -29,6 +29,8 @@ export class MergeManager {
 
   private pending: PendingMerge[] = [];
 
+  private scanTimer!: Phaser.Time.TimerEvent;
+
   constructor(
     private scene: GameScene,
     private score: ScoreManager,
@@ -39,9 +41,17 @@ export class MergeManager {
     private audio: AudioManager,
   ) {
     scene.matter.world.on('collisionstart', this.onCollision, this);
+    // Filet de sécurité : scan de proximité périodique — attrape les fusions
+    // que les événements de collision auraient manquées (corps endormis, etc.)
+    this.scanTimer = scene.time.addEvent({
+      delay: 150,
+      loop: true,
+      callback: () => this.proximityScan(),
+    });
   }
 
   destroy(): void {
+    this.scanTimer.remove();
     // matter.world peut déjà être détruit lors du SHUTDOWN de la scène
     this.scene.matter.world?.off('collisionstart', this.onCollision, this);
   }
@@ -81,6 +91,28 @@ export class MergeManager {
     };
     react(a, bodyA.speed);
     react(b, bodyB.speed);
+  }
+
+  /** Fusions manquées par les événements : deux fruits de même niveau qui se touchent. */
+  private proximityScan(): void {
+    const fruits = this.scene.fruits;
+    for (let i = 0; i < fruits.length; i++) {
+      const a = fruits[i];
+      if (a.isRemoved || a.isMerging) continue;
+      for (let j = i + 1; j < fruits.length; j++) {
+        const b = fruits[j];
+        if (b.isRemoved || b.isMerging) continue;
+        if (a.def.id !== b.def.id) continue;
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const minDist = (a.physicsRadius + b.physicsRadius) * 1.02;
+        if (dx * dx + dy * dy < minDist * minDist) {
+          if (!this.pending.some((p) => p.a === a || p.b === a || p.a === b || p.b === b)) {
+            this.pending.push({ a, b });
+          }
+        }
+      }
+    }
   }
 
   /** À appeler chaque frame : exécute les fusions détectées. */

@@ -88,7 +88,7 @@ const pxGame = await page.evaluate(async () => {
   off.height = snap.height;
   const ctx = off.getContext('2d');
   ctx.drawImage(snap, 0, 0);
-  const d = ctx.getImageData(Math.round((195 / 390) * snap.width), Math.round((700 / 844) * snap.height), 1, 1).data;
+  const d = ctx.getImageData(Math.round((195 / 390) * snap.width), Math.round((760 / 844) * snap.height), 1, 1).data;
   return [d[0], d[1], d[2]];
 });
 check(
@@ -98,6 +98,12 @@ check(
 );
 
 // --- Drop 1 : le fruit doit tomber (position y qui augmente) ---
+// Tiers forcés différents (1 puis 3) : pas de fusion possible, test déterministe
+await page.evaluate(() => {
+  const gs = window.__game.scene.getScene('Game');
+  gs.currentTier = 1;
+  gs.nextTier = 3;
+});
 await page.mouse.move(160, 300);
 await page.mouse.down();
 await page.mouse.move(240, 300, { steps: 6 });
@@ -105,13 +111,14 @@ await page.mouse.up();
 await new Promise((r) => setTimeout(r, 300));
 const pos1 = await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
-  const f = gs.fruits[gs.fruits.length - 1];
+  // fruits triés par y : on suit le fruit lâché (tier 1)
+  const f = gs.fruits.find((x) => x.def.id === 1);
   return f ? { y: f.body.position.y, x: f.body.position.x } : null;
 });
 await new Promise((r) => setTimeout(r, 1200));
 const pos2 = await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
-  const f = gs.fruits[gs.fruits.length - 1];
+  const f = gs.fruits.find((x) => x.def.id === 1);
   return f ? { y: f.body.position.y, x: f.body.position.x } : null;
 });
 check('fruit spawné après drop', pos1 !== null, `fruits position=${pos1?.y}`);
@@ -119,11 +126,18 @@ check('fruit tombe (physique active)', pos1 && pos2 && pos2.y > pos1.y + 100, `y
 check('fruit suit le doigt (x proche du relâché)', pos1 && Math.abs(pos1.x - 240) < 8, `x=${pos1?.x.toFixed(0)}`);
 
 // --- Drop 2 ---
+await page.evaluate(() => {
+  const gs = window.__game.scene.getScene('Game');
+  gs.currentTier = 3;
+  gs.nextTier = 1;
+});
 await page.mouse.move(170, 300);
 await page.mouse.down();
 await page.mouse.move(170, 300, { steps: 2 });
 await page.mouse.up();
-await new Promise((r) => setTimeout(r, 1800));
+// attendre largement : si les 2 fruits fusionnent (même tier aléatoire),
+// l'animation de fusion prend ~110 ms avant l'apparition du nouveau fruit
+await new Promise((r) => setTimeout(r, 2600));
 state = await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
   return {
@@ -184,33 +198,57 @@ const mergeState = await page.evaluate(() => {
 });
 check('chaîne de fusions → 1 fruit', mergeState.fruits === 1, `fruits=${mergeState.fruits} tiers=${mergeState.tiers}`);
 check('fruit final = niveau 7 (5+5→6, 6+6→7)', mergeState.tiers[0] === 7, mergeState.tiers.join(','));
-check('score chaîne = 220 (60 + 160)', mergeState.score === 220, `score=${mergeState.score}`);
+check('score chaîne = 280 (80 + 200)', mergeState.score === 280, `score=${mergeState.score}`);
 check('combo ×2 enregistré', mergeState.combo === 2, `combo=${mergeState.combo}`);
 check('bestTier = 7', mergeState.bestTier === 7, `bestTier=${mergeState.bestTier}`);
 
 await page.screenshot({ path: '/tmp/smoke_game.png' });
 
-// --- Danger line → game over ---
-// On maintient un fruit au-dessus de la ligne pendant > 1,5 s
+// --- Filet de sécurité : fusion par proximité (sans événement de collision) ---
+await page.evaluate(() => window.__game.scene.getScene('Game').scene.restart());
+await new Promise((r) => setTimeout(r, 1200));
 await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
-  const f = gs.fruits[gs.fruits.length - 1];
-  window.__holdFruit = setInterval(() => {
-    if (f && f.body) {
-      f.body.position.y = gs.dangerLine.y - 60;
-      // Verlet : positionPrev doit suivre, sinon la vélocité explose
-      f.body.positionPrev.y = f.body.position.y;
-      f.body.velocity.y = 0;
-    }
-  }, 50);
+  const a = gs.spawnFruit(2, 195, 700);
+  const b = gs.spawnFruit(2, 202, 700);
+  // statiques + superposés : aucun événement de collision ne peut se produire,
+  // seul le scan de proximité peut détecter la fusion
+  a.body.isStatic = true;
+  b.body.isStatic = true;
 });
-await new Promise((r) => setTimeout(r, 3000));
-await page.evaluate(() => clearInterval(window.__holdFruit));
+await new Promise((r) => setTimeout(r, 800));
+const proxState = await page.evaluate(() => {
+  const gs = window.__game.scene.getScene('Game');
+  return { fruits: gs.fruits.length, tiers: gs.fruits.map((f) => f.def.id), score: gs.scoreManager.score };
+});
+check('fusion par proximité (2 statiques superposés)', proxState.fruits === 1 && proxState.tiers[0] === 3, JSON.stringify(proxState));
+check('score fusion par proximité = 30', proxState.score === 30, `score=${proxState.score}`);
+
+// --- Règle Ball Guys : fruit qui s'échappe = game over ---
+// Repart propre + un fruit tier 7 qu'on téléporte À L'EXTÉRIEUR du bol,
+// sous le rebord : doit déclencher le game over immédiatement.
+await page.evaluate(() => window.__game.scene.getScene('Game').scene.restart());
+await new Promise((r) => setTimeout(r, 1200));
+await page.evaluate(() => {
+  const gs = window.__game.scene.getScene('Game');
+  // score de référence pour vérifier la persistance du best au game over
+  gs.scoreManager.score = 220;
+  gs.scoreManager.best = 220;
+  const f = gs.spawnFruit(7, 195, 700);
+  f.body.position.x = gs.cx + (gs.containerRight - gs.containerLeft) / 2 + 70;
+  f.body.position.y = gs.containerTop + 30;
+  // Verlet : positionPrev doit suivre, sinon la vélocité explose
+  f.body.positionPrev.x = f.body.position.x;
+  f.body.positionPrev.y = f.body.position.y;
+  f.body.velocity.x = 0;
+  f.body.velocity.y = 0;
+});
+await new Promise((r) => setTimeout(r, 2500));
 const goState = await page.evaluate(() => ({
   active: window.__game.scene.getScenes(true).map((s) => s.scene.key),
   best: window.__game.scene.getScene('GameOver')?.bestDisplayed ?? null,
 }));
-check('game over déclenché (scène GameOver active)', goState.active.includes('GameOver') === true, goState.active.join(','));
+check('fruit échappé → game over (règle Ball Guys)', goState.active.includes('GameOver') === true, goState.active.join(','));
 const bestSaved = await page.evaluate(() => window.localStorage.getItem('merge_fruits_best'));
 check('best score persisté (localStorage)', bestSaved !== null && parseInt(bestSaved, 10) === 220, `best=${bestSaved}`);
 

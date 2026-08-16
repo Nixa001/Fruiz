@@ -33,10 +33,18 @@ export class NextFruitUI {
     this.sprite = scene.add.image(x - size / 2, y + size * 0.55, 'fruit_1').setScale(k * 0.5).setDepth(21);
   }
 
+  /** Masque le fruit (pendant la chute du fruit courant). */
+  hide(): void {
+    this.sprite.setVisible(false);
+  }
+
   setTier(tier: number): void {
-    if (tier === this.lastTier) return;
+    if (tier === this.lastTier) {
+      this.sprite.setVisible(true);
+      return;
+    }
     this.lastTier = tier;
-    this.sprite.setTexture(`fruit_${tier}`).setScale(this.scene.scale.height / 1280 * 0.5);
+    this.sprite.setVisible(true).setTexture(`fruit_${tier}`).setScale(this.scene.scale.height / 1280 * 0.5);
     this.scene.tweens.add({
       targets: this.sprite,
       scale: this.scene.scale.height / 1280 * 0.62,

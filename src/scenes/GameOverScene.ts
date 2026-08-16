@@ -18,21 +18,22 @@ export class GameOverScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     const cx = w / 2;
-    const cy = h / 2;
+    // Panneau compact remonté : contenu dense, boutons en dessous, tout visible
+    const cy = h / 2 - 110 * k;
 
     const bg = this.add.graphics().setDepth(0);
     UIHelpers.drawNotebookBackground(this, bg, k);
 
     const particles = new ParticleManager(this);
     const newBest = data.score > 0 && data.score >= data.best;
-    if (newBest) particles.comboBurst(cx, cy - 220 * k, 6);
+    if (newBest) particles.comboBurst(cx, cy - 180 * k, 6);
 
     const panel = this.add.container(cx, cy).setDepth(10);
     panel.setScale(0.4).setAlpha(0);
     this.tweens.add({ targets: panel, scale: 1, alpha: 1, duration: 350, ease: 'Back.easeOut' });
 
     const pw = Math.min(w * 0.9, 620 * k);
-    const ph = Math.min(h * 0.78, 960 * k);
+    const ph = Math.min(h * 0.62, 800 * k);
     const g = this.add.graphics();
     g.fillStyle(0x000000, 0.2);
     g.fillRoundedRect(-pw / 2 + 8 * k, -ph / 2 + 10 * k, pw, ph, 34 * k);
@@ -42,13 +43,13 @@ export class GameOverScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 34 * k);
     panel.add(g);
 
-    const title = UIHelpers.makeText(this, 0, -ph / 2 + 110 * k, 'GAME OVER', 92 * k, '#e53935');
+    const title = UIHelpers.makeText(this, 0, -ph / 2 + 85 * k, 'GAME OVER', 84 * k, '#e53935');
     title.setStroke('#ffffff', 8 * k);
     panel.add(title);
 
     // Fruit le plus haut atteint
     const bestTier = data.bestTier;
-    const fruitImg = this.add.image(0, -ph / 2 + 300 * k, `fruit_${bestTier}`).setScale(k * 0.62);
+    const fruitImg = this.add.image(0, -ph / 2 + 205 * k, `fruit_${bestTier}`).setScale(k * 0.5);
     panel.add(fruitImg);
     this.tweens.add({
       targets: fruitImg,
@@ -59,9 +60,9 @@ export class GameOverScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
     const fruitName = this.add
-      .text(0, -ph / 2 + 420 * k, `Meilleur fruit : ${getFruit(bestTier).name}`, {
+      .text(0, -ph / 2 + 295 * k, `Meilleur fruit : ${getFruit(bestTier).name}`, {
         fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(28 * k)}px`,
+        fontSize: `${Math.round(26 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',
       })
@@ -70,18 +71,18 @@ export class GameOverScene extends Phaser.Scene {
 
     // Score compté
     const scoreLabel = this.add
-      .text(0, -ph / 2 + 500 * k, 'SCORE', {
+      .text(0, -ph / 2 + 355 * k, 'SCORE', {
         fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(26 * k)}px`,
+        fontSize: `${Math.round(24 * k)}px`,
         color: '#8d6e63',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
     panel.add(scoreLabel);
     const scoreText = this.add
-      .text(0, -ph / 2 + 570 * k, '0', {
+      .text(0, -ph / 2 + 410 * k, '0', {
         fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(72 * k)}px`,
+        fontSize: `${Math.round(62 * k)}px`,
         color: '#c94f3d',
         fontStyle: 'bold',
       })
@@ -96,11 +97,11 @@ export class GameOverScene extends Phaser.Scene {
       onUpdate: (tween) => scoreText.setText(String(Math.round(tween.getValue() ?? 0))),
     });
 
-    // Best + badge record
+    // Best + badge record (le badge remplace la ligne BEST si nouveau record)
     const bestText = this.add
-      .text(0, -ph / 2 + 680 * k, `BEST  ${data.best}`, {
+      .text(0, -ph / 2 + 495 * k, `BEST  ${data.best}`, {
         fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(34 * k)}px`,
+        fontSize: `${Math.round(32 * k)}px`,
         color: '#2f8f46',
         fontStyle: 'bold',
       })
@@ -108,27 +109,13 @@ export class GameOverScene extends Phaser.Scene {
     panel.add(bestText);
 
     if (newBest) {
-      const badge = this.add.container(0, -ph / 2 + 770 * k);
-      const bgBadge = this.add.graphics();
-      bgBadge.fillStyle(0xffd54f, 1);
-      bgBadge.fillRoundedRect(-170 * k, -32 * k, 340 * k, 64 * k, 32 * k);
-      bgBadge.lineStyle(4 * k, 0x27272f, 1);
-      bgBadge.strokeRoundedRect(-170 * k, -32 * k, 340 * k, 64 * k, 32 * k);
-      badge.add(bgBadge);
-      const badgeText = this.add
-        .text(0, 0, '★ NOUVEAU RECORD ★', {
-          fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-          fontSize: `${Math.round(26 * k)}px`,
-          color: '#27272f',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
-      badge.add(badgeText);
-      panel.add(badge);
+      bestText.setText('★ NOUVEAU RECORD ★');
+      bestText.setColor('#27272f');
+      bestText.setFontSize(Math.round(28 * k));
       this.tweens.add({
-        targets: badge,
+        targets: bestText,
         angle: { from: -3, to: 3 },
-        scale: { from: 1.05, to: 1 },
+        scale: { from: 1.06, to: 1 },
         duration: 180,
         yoyo: true,
         repeat: -1,
@@ -138,8 +125,8 @@ export class GameOverScene extends Phaser.Scene {
 
     // Boutons sous le panneau (absolus : input fiable sur mobile)
     const bw = Math.min(340 * k, w * 0.7);
-    const bh = 96 * k;
-    const btnY1 = cy + ph / 2 + 70 * k;
+    const bh = 92 * k;
+    const btnY1 = cy + ph / 2 + 58 * k;
     UIHelpers.makeButton(
       this,
       { x: cx, y: btnY1, width: bw, height: bh, label: 'REJOUER', fill: 0xffd54f, radius: 24 * k, depth: 15 },

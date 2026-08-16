@@ -33,22 +33,6 @@ export class FruitEffects {
     });
   }
 
-  /** Étirement vertical pendant la chute. */
-  static dropStretch(fruit: Fruit): void {
-    fruit.setScale(0.88, 1.18);
-  }
-
-  /** Reprend la forme normale (à l'atterrissage). */
-  static settle(fruit: Fruit): void {
-    fruit.scene.tweens.add({
-      targets: fruit,
-      scaleX: 1,
-      scaleY: 1,
-      duration: 180,
-      ease: 'Sine.easeOut',
-    });
-  }
-
   /** Écrasement latéral à l'impact (dirX = direction du choc). */
   static impact(fruit: Fruit, dirX: number): void {
     const scene = fruit.scene;

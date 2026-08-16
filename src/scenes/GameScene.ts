@@ -9,12 +9,11 @@ import { ComboManager } from '../systems/ComboManager';
 import { DangerManager } from '../systems/DangerManager';
 import { ScoreUI } from '../ui/ScoreUI';
 import { ComboPopup } from '../ui/ComboPopup';
-import { DangerLine } from '../ui/DangerLine';
 import { NextFruitUI } from '../ui/NextFruitUI';
+import { EvolutionBar } from '../ui/EvolutionBar';
 import { SaveManager } from '../managers/SaveManager';
 import { ParticleManager } from '../managers/ParticleManager';
 import { ScreenEffects } from '../effects/ScreenEffects';
-import { FruitEffects } from '../effects/FruitEffects';
 import { audioManager } from '../managers/AudioManager';
 
 /**
@@ -25,14 +24,14 @@ import { audioManager } from '../managers/AudioManager';
  */
 export class GameScene extends Phaser.Scene {
   private scaleK = 1;
-  private cx = 360;
-  private containerTop = 0;
-  private containerBottom = 0;
-  private containerLeft = 0;
-  private containerRight = 0;
+  cx = 360;
+  containerTop = 0;
+  containerBottom = 0;
+  containerLeft = 0;
+  containerRight = 0;
   private previewY = 0;
 
-  private fruits: Fruit[] = [];
+  fruits: Fruit[] = [];
   private walls: MatterBody[] = [];
   private bgGraphics!: Phaser.GameObjects.Graphics;
   private bowlGraphics!: Phaser.GameObjects.Graphics;
@@ -46,6 +45,9 @@ export class GameScene extends Phaser.Scene {
   private dropLocked = false;
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
+  /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
+  private pendingNextReveal: Fruit | null = null;
+  private dropSpawnY = 0;
 
   private scoreManager!: ScoreManager;
   private comboManager!: ComboManager;
@@ -53,9 +55,9 @@ export class GameScene extends Phaser.Scene {
   private scoreUI!: ScoreUI;
   private comboPopup!: ComboPopup;
   private nextFruitUI!: NextFruitUI;
+  private evolutionBar!: EvolutionBar;
   private particleManager!: ParticleManager;
   private screenEffects!: ScreenEffects;
-  private dangerLine!: DangerLine;
   private dangerManager!: DangerManager;
   private gameOverTriggered = false;
 
@@ -70,15 +72,18 @@ export class GameScene extends Phaser.Scene {
     this.dropLocked = false;
     this.pointerDown = false;
     this.gameOverTriggered = false;
+    this.pendingNextReveal = null;
 
-    // Physique plus stable pour les piles de fruits
+    // Physique ferme : les fruits se poussent sans se superposer
     const engine = this.matter.world.engine;
-    engine.positionIterations = 8;
-    engine.velocityIterations = 6;
+    engine.positionIterations = 10;
+    engine.velocityIterations = 8;
 
     this.bgGraphics = this.add.graphics().setDepth(0);
     this.bowlGraphics = this.add.graphics().setDepth(1);
-    this.physicsDebugGraphics = this.add.graphics().setDepth(3);
+    // Au-DESSUS des fruits (10+) : les cercles de collision restent visibles
+    // (sinon la texture du fruit recouvre exactement le cercle)
+    this.physicsDebugGraphics = this.add.graphics().setDepth(45);
 
     this.layout();
     this.drawBackground();
@@ -94,13 +99,11 @@ export class GameScene extends Phaser.Scene {
     this.scoreUI = new ScoreUI(this);
     this.comboPopup = new ComboPopup(this);
     this.nextFruitUI = new NextFruitUI(this);
+    this.evolutionBar = new EvolutionBar(this);
     this.particleManager = new ParticleManager(this);
     this.screenEffects = new ScreenEffects(this);
-    // Ligne de danger = rebord de la calebasse : un fruit qui déborde = danger.
-    // Placée juste SOUS le plan du rebord : un fruit posé sur la pente interne
-    // (légitimement dans le bol) ne compte pas, un vrai débordement oui.
-    this.dangerLine = new DangerLine(this, this.containerLeft, this.containerRight, this.containerTop - 10 * this.scaleK);
-    this.dangerManager = new DangerManager(this.dangerLine, () => this.gameOver(), 0);
+    // Règle Ball Guys : fruit qui s'échappe de la calebasse = game over
+    this.dangerManager = new DangerManager(this, () => this.gameOver());
     this.mergeManager = new MergeManager(
       this,
       this.scoreManager,
@@ -117,6 +120,8 @@ export class GameScene extends Phaser.Scene {
     this.currentTier = rollSpawnTier();
     this.nextTier = rollSpawnTier();
     this.refreshPreview();
+    // Première révélation du NEXT (aucun fruit en chute au démarrage)
+    this.nextFruitUI.setTier(this.nextTier);
 
     this.scale.on('resize', this.onResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
@@ -149,7 +154,29 @@ export class GameScene extends Phaser.Scene {
     }
     this.mergeManager.update();
     this.scoreUI.update(this.scoreManager.score, this.scoreManager.best);
-    this.dangerManager.update(this.fruits, this.game.loop.delta);
+    this.dangerManager.update(this.fruits);
+    this.evolutionBar.setProgress(this.mergeManager.bestTier);
+    // Révélation du fruit suivant : quand le fruit lâché atteint la mi-parcours
+    // (ou s'il a fusionné en vol), le fruit EN MAIN apparaît au point de départ
+    // et la carte NEXT avance au fruit d'après
+    if (this.pendingNextReveal) {
+      const f = this.pendingNextReveal;
+      if (f.isRemoved || f.y >= this.dropSpawnY + (this.containerTop - this.dropSpawnY) * 0.5) {
+        this.pendingNextReveal = null;
+        this.currentTier = this.nextTier;
+        this.nextTier = rollSpawnTier();
+        this.previewSprite.setVisible(true);
+        this.refreshPreview();
+        this.nextFruitUI.setTier(this.nextTier);
+      }
+    }
+    // Debug des collisions (calebasse + fruits) : mis à jour à chaque frame
+    this.drawPhysicsDebug();
+    // Occlusion : les fruits du bas dessinés derrière, ceux du haut devant
+    this.fruits.sort((a, b) => a.y - b.y);
+    for (let i = 0; i < this.fruits.length; i++) {
+      this.fruits[i].setDepth(10 + i);
+    }
     // Les fruits regardent le prochain fruit à lancer
     for (const fruit of this.fruits) {
       fruit.lookAt(this.previewX, this.previewY);
@@ -165,14 +192,15 @@ export class GameScene extends Phaser.Scene {
     const k = this.scaleK;
     this.cx = w / 2;
     // Calebasse peu profonde, large, en bas de l'écran (façon Ball Guys) :
-    // on remplit, un fruit déborde → game over
-    const halfW = Math.min(w * 0.46, 330 * k);
+    // on remplit, un fruit déborde → game over. Taille réduite de 20% ×2.
+    // Remontée pour laisser la place à la barre d'évolution des fruits en bas.
+    const halfW = Math.min(w * 0.46, 330 * k) * 0.64;
     this.containerLeft = this.cx - halfW;
     this.containerRight = this.cx + halfW;
-    this.containerTop = h - 400 * k;
-    this.containerBottom = this.containerTop + halfW;
-    // Le fruit est lancé depuis le HAUT de l'écran (sous le HUD)
-    this.previewY = 130 * k;
+    this.containerBottom = h - 240 * k;
+    this.containerTop = this.containerBottom - halfW;
+    // Le fruit est lancé depuis le haut, mais descendu pour réduire la chute
+    this.previewY = 300 * k;
     this.matter.world.setGravity(0, 1.4 * k);
   }
 
@@ -182,8 +210,6 @@ export class GameScene extends Phaser.Scene {
     this.buildWalls();
     this.drawBowl();
     this.drawPhysicsDebug();
-    this.dangerLine.setPosition(this.containerLeft, this.containerRight, this.containerTop - 10 * this.scaleK);
-    this.dangerManager.setLineY(this.dangerLine.y, 0);
     this.updatePreviewPosition();
   }
 
@@ -261,8 +287,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Affiche en rouge les lignes de collision de la calebasse
-   * (contours exacts des corps physiques : murets + dalles en V).
+   * Affiche en rouge les lignes de collision : arc de la calebasse
+   * et cercles des fruits. Appelé chaque frame (les fruits bougent).
    */
   private drawPhysicsDebug(): void {
     const g = this.physicsDebugGraphics;
@@ -279,15 +305,22 @@ export class GameScene extends Phaser.Scene {
       g.closePath();
       g.strokePath();
     }
+    // Cercles de collision des fruits
+    g.lineStyle(2, 0xff2222, 0.8);
+    for (const fruit of this.fruits) {
+      if (fruit.isRemoved || !fruit.body) continue;
+      g.strokeCircle(fruit.body.position.x, fruit.body.position.y, fruit.physicsRadius);
+    }
   }
 
   // ---------- physique ----------
 
   /**
-   * Physique de la calebasse demi-cercle :
-   * - deux murets au-dessus du rebord (rattrapent les rebonds)
-   * - une bande en ARC (demi-cercle) pour le fond : les collisions
-   *   suivent exactement la courbe de la calebasse
+   * Physique de la calebasse demi-cercle : uniquement l'ARC du fond
+   * (chaîne de petits cercles statiques le long du demi-cercle).
+   * La surface intérieure colle à la courbe dessinée (R - 8k) et les
+   * fruits roulent naturellement vers le centre. (fromVertices/poly-decomp
+   * produit des triangles parasites sur cette forme concave : on évite.)
    */
   private buildWalls(): void {
     const engine = this.matter.world.engine;
@@ -308,37 +341,12 @@ export class GameScene extends Phaser.Scene {
       collisionFilter: { category: WALL_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
     };
 
-    // Murets au-dessus du rebord
-    const wallW = 34 * k;
-    const wallH = 90 * k;
-    const wallCY = rimTop - 35 * k;
-    const left = Matter.Bodies.rectangle(this.containerLeft + wallW / 2, wallCY, wallW, wallH, base);
-    const right = Matter.Bodies.rectangle(this.containerRight - wallW / 2, wallCY, wallW, wallH, base);
-
-    // Fond en arc : bande annulaire échantillonnée le long du demi-cercle.
-    // La surface intérieure colle à la courbe dessinée (R - 8k).
     const rInner = R - 8 * k;
-    const bandW = 34 * k;
-    const samples = 30;
-    const verts: { x: number; y: number }[] = [];
-    for (let i = 0; i <= samples; i++) {
-      const t = (i / samples) * Math.PI;
-      verts.push({
-        x: cx + (rInner + bandW) * Math.cos(t),
-        y: rimTop + (rInner + bandW) * Math.sin(t),
-      });
-    }
-    for (let i = samples; i >= 0; i--) {
-      const t = (i / samples) * Math.PI;
-      verts.push({ x: cx + rInner * Math.cos(t), y: rimTop + rInner * Math.sin(t) });
-    }
-    const arc = Matter.Bodies.fromVertices(cx, rimTop, [verts], base, false);
-    if (arc) {
-      Matter.Composite.add(engine.world, arc);
-      this.walls.push(arc);
-    }
-
-    for (const body of [left, right]) {
+    const circleR = 0.01 * k;
+    const arcCircles = 70;
+    for (let i = 0; i <= arcCircles; i++) {
+      const t = (i / arcCircles) * Math.PI;
+      const body = Matter.Bodies.circle(cx + rInner * Math.cos(t), rimTop + rInner * Math.sin(t), circleR, base);
       Matter.Composite.add(engine.world, body);
       this.walls.push(body);
     }
@@ -373,7 +381,7 @@ export class GameScene extends Phaser.Scene {
     this.previewSprite.setTexture(`fruit_${this.currentTier}`).setScale(this.scaleK);
     this.startPreviewBounce();
     this.updatePreviewPosition();
-    this.nextFruitUI.setTier(this.nextTier);
+    // NB : nextFruitUI est mis à jour séparément (mi-parcours de la chute)
   }
 
   private updatePreviewPosition(): void {
@@ -429,19 +437,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private dropCurrent(): void {
-    if (this.dropLocked) return;
+    // Pas de lancer tant que le fruit précédent n'a pas atteint la mi-parcours
+    if (this.dropLocked || this.pendingNextReveal) return;
     this.dropLocked = true;
     this.time.delayedCall(220, () => {
       this.dropLocked = false;
     });
     const fruit = this.spawnFruit(this.currentTier, this.previewX, this.previewY);
-    // Le fruit est excité de tomber + étirement de chute
+    // Le fruit est excité de tomber
     fruit.express(FruitExpression.EXCITED);
-    FruitEffects.dropStretch(fruit);
     audioManager.playDrop();
-    this.currentTier = this.nextTier;
-    this.nextTier = rollSpawnTier();
-    this.refreshPreview();
+    // Le fruit en main disparaît et ne revient qu'à la mi-parcours de la chute.
+    // La carte NEXT continue d'afficher le fruit qui viendra en main.
+    this.pendingNextReveal = fruit;
+    this.dropSpawnY = this.previewY;
+    this.previewSprite.setVisible(false);
+    this.guideGraphics.clear();
   }
 
   spawnFruit(tier: number, x: number, y: number): Fruit {

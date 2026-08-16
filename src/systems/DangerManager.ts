@@ -1,75 +1,58 @@
 import { Fruit } from '../entities/Fruit';
-import { FruitExpression } from '../types/GameTypes';
-import { DangerLine } from '../ui/DangerLine';
-import { audioManager } from '../managers/AudioManager';
-
-const DANGER_MS = 700;
-const GAME_OVER_MS = 1000;
+import type { GameScene } from '../scenes/GameScene';
 
 /**
- * Surveille le rebord de la calebasse : un fruit qui déborde au-dessus
- * trop longtemps déclenche la fin de partie. 3 états : normal, danger, critique.
+ * Règle de fin façon Ball Guys : pas de ligne de remplissage.
+ * Game over immédiat si un fruit S'ÉCHAPPE de la calebasse :
+ * - il sort de la silhouette du bol en dessous du rebord (rebond dehors)
+ * - ou il tombe hors de l'écran
  */
 export class DangerManager {
-  private overLineSince = 0;
   private triggered = false;
-  private lineY = 0;
-  private marginPx = 0;
-  private lastState: 'normal' | 'danger' | 'critical' = 'normal';
 
   constructor(
-    private line: DangerLine,
+    private scene: GameScene,
     private onGameOver: () => void,
-    marginPx: number,
-  ) {
-    this.lineY = line.y;
-    this.marginPx = marginPx;
-  }
-
-  setLineY(y: number, marginPx: number): void {
-    this.lineY = y;
-    this.marginPx = marginPx;
-  }
+  ) {}
 
   reset(): void {
-    this.overLineSince = 0;
     this.triggered = false;
-    this.line.setState('normal');
   }
 
-  update(fruits: Fruit[], dt: number): void {
+  update(fruits: Fruit[]): void {
     if (this.triggered) return;
-    let anyOver = false;
+    const cx = this.scene.cx;
+    const rimTop = this.scene.containerTop;
+    const rimRadius = (this.scene.containerRight - this.scene.containerLeft) / 2;
+    const screenH = this.scene.scale.height;
+
     for (const fruit of fruits) {
       if (fruit.isRemoved || !fruit.body) continue;
-      // On ignore les fruits encore en mouvement (chute, rebond) :
-      // seul un fruit POSÉ au-dessus du rebord compte comme débordement.
-      // Marge : un fruit posé sur la pente interne peut dépasser le rebord
-      // de quelques pixels sans déborder réellement.
-      if (fruit.body.speed > 2.5) continue;
-      const top = fruit.body.position.y - fruit.physicsRadius;
-      if (top < this.lineY + this.marginPx) {
-        anyOver = true;
-        fruit.express(FruitExpression.SCARED);
-      }
-    }
+      // Grâce 400 ms après spawn : un fruit né d'une fusion peut être
+      // poussé violemment hors du bol par la résolution de collision
+      // sans que ce soit une vraie échappée
+      if (this.scene.time.now - fruit.spawnTime < 400) continue;
+      const p = fruit.body.position;
 
-    if (anyOver) {
-      this.overLineSince += dt;
-      const newState = this.overLineSince >= DANGER_MS ? 'critical' : 'danger';
-      this.line.setState(newState);
-      if (newState === 'critical' && this.lastState !== 'critical') {
-        audioManager.playDanger();
+      // Tombé hors de l'écran par le bas
+      if (p.y > screenH + 60) {
+        this.trigger();
+        return;
       }
-      this.lastState = newState;
-      if (this.overLineSince >= GAME_OVER_MS) {
-        this.triggered = true;
-        this.onGameOver();
+      // En dessous du rebord mais hors de la silhouette du bol : échappé
+      if (p.y > rimTop + 10) {
+        const dx = p.x - cx;
+        const dy = p.y - rimTop;
+        if (dx * dx + dy * dy > rimRadius * rimRadius) {
+          this.trigger();
+          return;
+        }
       }
-    } else {
-      this.overLineSince = 0;
-      this.line.setState('normal');
-      this.lastState = 'normal';
     }
+  }
+
+  private trigger(): void {
+    this.triggered = true;
+    this.onGameOver();
   }
 }

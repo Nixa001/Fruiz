@@ -29,12 +29,13 @@ export class FruitRenderer {
     const extra = FruitRenderer.extraSpace(def.shape, r);
     const size = Math.ceil((r + extra) * 2) + OUTLINE_WIDTH * 2 + 6;
     const canvas = document.createElement('canvas');
-    canvas.width = size * 2;
-    canvas.height = size * 2;
+    // Résolution 1:1 : le sprite affiché a exactement la taille dessinée.
+    // (Un canvas 2x non re-dimensionné rendait les fruits 2x trop grands
+    // par rapport à leur cercle de collision.)
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // rendu interne x2 pour des contours nets sur mobile
-    ctx.scale(2, 2);
     ctx.translate(size / 2, size / 2);
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -56,7 +57,34 @@ export class FruitRenderer {
     }
   }
 
+  /**
+   * Facteur de dessin du corps : le fruit VISUEL doit tenir exactement
+   * dans le cercle de collision (rayon physique = def.radius).
+   * Ex : la couronne de l'ananas dépasse de 60% sans correction.
+   */
+  static bodyScale(shape: FruitShape): number {
+    switch (shape) {
+      case 'peanut':
+        return 0.75;
+      case 'apple':
+        return 0.84;
+      case 'made':
+        return 0.97;
+      case 'mango':
+        return 0.93;
+      case 'ananas':
+        return 0.78;
+      case 'papaya':
+        return 0.92;
+      default:
+        return 1;
+    }
+  }
+
   private static drawFruit(ctx: CanvasRenderingContext2D, def: FruitDefinition, r: number): void {
+    // Le corps est dessiné dans le rayon physique exact (scale inclus)
+    const s = FruitRenderer.bodyScale(def.shape);
+    if (s !== 1) ctx.scale(s, s);
     switch (def.shape) {
       case 'peanut':
         FruitRenderer.drawPeanut(ctx, def, r);
@@ -83,7 +111,7 @@ export class FruitRenderer {
       default:
         FruitRenderer.drawCircleBase(ctx, def, r);
         if (def.id === 4) FruitRenderer.drawGoyaveNubs(ctx, r); // Goyave
-        if (def.id === 9) FruitRenderer.drawCocoFiber(ctx, def, r); // Coco
+        if (def.id === 8) FruitRenderer.drawCocoFiber(ctx, def, r); // Coco
     }
   }
 
