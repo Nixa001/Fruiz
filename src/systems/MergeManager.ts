@@ -164,7 +164,7 @@ export class MergeManager {
       } else {
         const fruit = scene.spawnFruit(tier + 1, x, y);
         // Petit pop vers le haut : la fusion "pousse" le nouveau fruit
-        fruit.body.velocity.y = -4;
+        fruit.body.velocity.y = -3;
         FruitEffects.spawnPop(scene, fruit);
         fruit.express(FruitExpression.CELEBRATING, 1400);
         this.score.addMerge(tier + 1, comboN, x, y);

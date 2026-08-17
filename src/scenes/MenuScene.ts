@@ -97,7 +97,7 @@ export class MenuScene extends Phaser.Scene {
     title.setStroke('#ffffff', 10 * k);
     const title2 = UIHelpers.makeText(this, w / 2, 300 * k, 'FRUITS', 110 * k, '#2f8f46');
     title2.setStroke('#ffffff', 10 * k);
-    const sub = UIHelpers.makeText(this, w / 2, 425 * k, '✦ SÉNÉGAL ✦', 52 * k, '#c94f3d');
+    const sub = UIHelpers.makeText(this, w / 2, 425 * k, '✦ FRUIZ ✦', 52 * k, '#c94f3d');
     sub.setStroke('#ffffff', 7 * k);
 
     // Titre vivant : balancement arcade

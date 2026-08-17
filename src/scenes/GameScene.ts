@@ -50,8 +50,6 @@ export class GameScene extends Phaser.Scene {
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
-  /** Touches 1-9, 0, - : force le tier du fruit en main (test rapide). */
-  private tierKeys?: Record<number, Phaser.Input.Keyboard.Key>;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
   private pendingNextReveal: Fruit | null = null;
   private dropSpawnY = 0;
@@ -146,17 +144,6 @@ export class GameScene extends Phaser.Scene {
     // Clavier (test desktop) : flèches + espace, Échap = pause
     if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this.togglePause();
-    }
-    // Raccourci test : touches 1-9, 0, - = forcer le tier du fruit en main
-    if (this.tierKeys) {
-      for (const [tier, key] of Object.entries(this.tierKeys)) {
-        if (Phaser.Input.Keyboard.JustDown(key)) {
-          this.currentTier = Number(tier);
-          this.refreshPreview();
-          audioManager.playButton();
-          break;
-        }
-      }
     }
     if (this.keys) {
       const step = 12 * this.scaleK;
@@ -465,23 +452,6 @@ export class GameScene extends Phaser.Scene {
     if (kb) {
       this.keys = kb.createCursorKeys();
       this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      const t = kb.addKeys('ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO,MINUS') as Record<
-        string,
-        Phaser.Input.Keyboard.Key
-      >;
-      this.tierKeys = {
-        1: t.ONE,
-        2: t.TWO,
-        3: t.THREE,
-        4: t.FOUR,
-        5: t.FIVE,
-        6: t.SIX,
-        7: t.SEVEN,
-        8: t.EIGHT,
-        9: t.NINE,
-        10: t.ZERO,
-        11: t.MINUS,
-      };
     }
   }
 

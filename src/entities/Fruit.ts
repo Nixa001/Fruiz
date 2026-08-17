@@ -28,6 +28,9 @@ interface MatterLib {
     add(composite: unknown, object: MatterJS.BodyType): unknown;
     remove(composite: unknown, object: MatterJS.BodyType): unknown;
   };
+  Sleeping: {
+    set(body: MatterJS.BodyType, isSleeping: boolean): void;
+  };
 }
 export const Matter = (Phaser.Physics.Matter as unknown as { Matter: MatterLib }).Matter;
 export type MatterBody = MatterJS.BodyType;
@@ -116,6 +119,11 @@ export class Fruit extends Phaser.GameObjects.Container {
       const f = 24 / speed;
       v.x *= f;
       v.y *= f;
+    }
+    // Anti-flottement : un fruit né d'une fusion ne doit pas s'endormir
+    // pendant son pop/sa retombée (sinon il reste suspendu en l'air)
+    if (this.scene.time.now - this.spawnTime < 900 && this.body.isSleeping) {
+      Matter.Sleeping.set(this.body, false);
     }
     this.setPosition(this.body.position.x, this.body.position.y);
     this.setRotation(this.body.angle);

@@ -1,4 +1,4 @@
-# MERGE FRUIZ 🍉
+# FRUIZ 🍉
 
 Jeu mobile casual de fusion de fruits (style Watermelon Game), avec des fruits-personnages
 expressifs inspirés de l'esprit de Ball Guys, et une identité sénégalaise :

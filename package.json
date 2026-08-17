@@ -1,9 +1,9 @@
 {
-  "name": "merge-fruits-senegal",
+  "name": "fruiz",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "MERGE FRUIZ — jeu mobile casual de fusion de fruits (Phaser 3 + TypeScript + Vite + Matter)",
+  "description": "FRUIZ — jeu mobile casual de fusion de fruits (Phaser 3 + TypeScript + Vite + Matter)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
