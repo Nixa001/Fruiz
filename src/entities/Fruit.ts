@@ -73,7 +73,10 @@ export class Fruit extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.def = getFruit(tier);
     this.radiusScale = opts.radiusScale;
-    this.physicsRadius = this.def.radius * opts.radiusScale * FRUIT_COLLISION_SCALE;
+    // Gros fruits : collision resserrée (tier 6 légèrement, tier ≥ 7 au visuel)
+    // (ils sont volumineux dans une petite calebasse)
+    const collisionScale = tier >= 7 ? 1 : tier === 6 ? 1.05 : FRUIT_COLLISION_SCALE;
+    this.physicsRadius = this.def.radius * opts.radiusScale * collisionScale;
     this.spawnTime = scene.time.now;
 
     this.body = Matter.Bodies.circle(x, y, this.physicsRadius, {

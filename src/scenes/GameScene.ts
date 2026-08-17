@@ -40,7 +40,6 @@ export class GameScene extends Phaser.Scene {
   private walls: MatterBody[] = [];
   private bgGraphics!: Phaser.GameObjects.Graphics;
   private bowlGraphics!: Phaser.GameObjects.Graphics;
-  private physicsDebugGraphics!: Phaser.GameObjects.Graphics;
   private previewGroup!: Phaser.GameObjects.Container;
   private previewSprite!: Phaser.GameObjects.Image;
   private guideGraphics!: Phaser.GameObjects.Graphics;
@@ -51,6 +50,8 @@ export class GameScene extends Phaser.Scene {
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
+  /** Touches 1-9, 0, - : force le tier du fruit en main (test rapide). */
+  private tierKeys?: Record<number, Phaser.Input.Keyboard.Key>;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
   private pendingNextReveal: Fruit | null = null;
   private dropSpawnY = 0;
@@ -91,16 +92,12 @@ export class GameScene extends Phaser.Scene {
 
     this.bgGraphics = this.add.graphics().setDepth(0);
     this.bowlGraphics = this.add.graphics().setDepth(1);
-    // Au-DESSUS des fruits (10+) : les cercles de collision restent visibles
-    // (sinon la texture du fruit recouvre exactement le cercle)
-    this.physicsDebugGraphics = this.add.graphics().setDepth(45);
 
     this.layout();
     this.drawBackground();
     this.buildDoodles();
     this.buildWalls();
     this.drawBowl();
-    this.drawPhysicsDebug();
     this.buildPreview();
     this.setupInput();
 
@@ -150,6 +147,17 @@ export class GameScene extends Phaser.Scene {
     if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this.togglePause();
     }
+    // Raccourci test : touches 1-9, 0, - = forcer le tier du fruit en main
+    if (this.tierKeys) {
+      for (const [tier, key] of Object.entries(this.tierKeys)) {
+        if (Phaser.Input.Keyboard.JustDown(key)) {
+          this.currentTier = Number(tier);
+          this.refreshPreview();
+          audioManager.playButton();
+          break;
+        }
+      }
+    }
     if (this.keys) {
       const step = 12 * this.scaleK;
       if (this.keys.left.isDown) {
@@ -191,8 +199,6 @@ export class GameScene extends Phaser.Scene {
         this.nextFruitUI.setTier(this.nextTier);
       }
     }
-    // Debug des collisions (calebasse + fruits) : mis à jour à chaque frame
-    this.drawPhysicsDebug();
     // Occlusion : les fruits du bas dessinés derrière, ceux du haut devant
     this.fruits.sort((a, b) => a.y - b.y);
     for (let i = 0; i < this.fruits.length; i++) {
@@ -230,7 +236,6 @@ export class GameScene extends Phaser.Scene {
     this.drawBackground();
     this.buildWalls();
     this.drawBowl();
-    this.drawPhysicsDebug();
     this.updatePreviewPosition();
   }
 
@@ -328,33 +333,6 @@ export class GameScene extends Phaser.Scene {
     g.beginPath();
     g.arc(cx, rimTop, RShell - 12 * k, Math.PI * 0.12, Math.PI * 0.55, false);
     g.strokePath();
-  }
-
-  /**
-   * Affiche en rouge les lignes de collision : arc de la calebasse
-   * et cercles des fruits. Appelé chaque frame (les fruits bougent).
-   */
-  private drawPhysicsDebug(): void {
-    const g = this.physicsDebugGraphics;
-    g.clear();
-    g.lineStyle(3, 0xff2222, 0.85);
-    for (const body of this.walls) {
-      const v = body.vertices;
-      if (!v || v.length === 0) continue;
-      g.beginPath();
-      g.moveTo(v[0].x, v[0].y);
-      for (let i = 1; i < v.length; i++) {
-        g.lineTo(v[i].x, v[i].y);
-      }
-      g.closePath();
-      g.strokePath();
-    }
-    // Cercles de collision des fruits
-    g.lineStyle(2, 0xff2222, 0.8);
-    for (const fruit of this.fruits) {
-      if (fruit.isRemoved || !fruit.body) continue;
-      g.strokeCircle(fruit.body.position.x, fruit.body.position.y, fruit.physicsRadius);
-    }
   }
 
   // ---------- physique ----------
@@ -487,6 +465,23 @@ export class GameScene extends Phaser.Scene {
     if (kb) {
       this.keys = kb.createCursorKeys();
       this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+      const t = kb.addKeys('ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,ZERO,MINUS') as Record<
+        string,
+        Phaser.Input.Keyboard.Key
+      >;
+      this.tierKeys = {
+        1: t.ONE,
+        2: t.TWO,
+        3: t.THREE,
+        4: t.FOUR,
+        5: t.FIVE,
+        6: t.SIX,
+        7: t.SEVEN,
+        8: t.EIGHT,
+        9: t.NINE,
+        10: t.ZERO,
+        11: t.MINUS,
+      };
     }
   }
 
