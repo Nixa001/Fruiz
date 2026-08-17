@@ -194,10 +194,9 @@ export class FaceController {
     white.strokeEllipse(ex, ey, w, h);
 
     const pr = spec.pupilR * this.r;
+    // Pupille noire pleine : pas de point blanc (il se confondait avec un œil)
     pupil.fillStyle(DARK, 1);
     pupil.fillCircle(0, 0, pr);
-    pupil.fillStyle(0xffffff, 1);
-    pupil.fillCircle(pr * 0.35, -pr * 0.35, pr * 0.3);
     this.applyPupilPosition();
   }
 

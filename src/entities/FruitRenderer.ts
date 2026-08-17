@@ -155,25 +155,6 @@ export class FruitRenderer {
     ctx.stroke();
   }
 
-  private static drawHighlight(
-    ctx: CanvasRenderingContext2D,
-    r: number,
-    x = -r * 0.35,
-    y = -r * 0.42,
-    rx = r * 0.26,
-    ry = r * 0.16,
-    rot = -0.5,
-  ): void {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rot);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.fill();
-    ctx.restore();
-  }
-
   // ---------- formes de base ----------
 
   private static drawCircleBase(
@@ -188,7 +169,6 @@ export class FruitRenderer {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     FruitRenderer.fillGradient(ctx, def, radius, cx, cy);
     FruitRenderer.strokeOutline(ctx);
-    FruitRenderer.drawHighlight(ctx, radius, cx - radius * 0.35, cy - radius * 0.42);
   }
 
   private static drawEllipseBase(
@@ -209,7 +189,6 @@ export class FruitRenderer {
     ctx.fillStyle = g;
     ctx.fill();
     FruitRenderer.strokeOutline(ctx);
-    FruitRenderer.drawHighlight(ctx, rx, -rx * 0.35, -ry * 0.42, rx * 0.24, ry * 0.14);
     ctx.restore();
   }
 
@@ -263,7 +242,6 @@ export class FruitRenderer {
     ctx.fillStyle = g;
     ctx.fill();
     FruitRenderer.strokeOutline(ctx);
-    FruitRenderer.drawHighlight(ctx, r);
   }
 
   /** Mangue : ovale incliné + tige. */
@@ -315,7 +293,6 @@ export class FruitRenderer {
     }
     ctx.restore();
     FruitRenderer.strokeOutline(ctx);
-    FruitRenderer.drawHighlight(ctx, cr, -cr * 0.35, cy - cr * 0.42);
   }
 
   /** Papaye : ovale vertical. */
@@ -349,7 +326,6 @@ export class FruitRenderer {
     }
     ctx.restore();
     FruitRenderer.strokeOutline(ctx);
-    FruitRenderer.drawHighlight(ctx, r);
     // tige
     ctx.strokeStyle = '#1e6b31';
     ctx.lineWidth = 5;

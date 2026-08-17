@@ -1,5 +1,5 @@
 import { Fruit, MatterBody } from '../entities/Fruit';
-import { FRUITS, MAX_TIER_MERGE_BONUS } from '../data/FruitData';
+import { FRUITS, MAX_TIER_MERGE_BONUS, getFruit } from '../data/FruitData';
 import { FruitExpression } from '../types/GameTypes';
 import { FruitEffects } from '../effects/FruitEffects';
 import { ScreenEffects } from '../effects/ScreenEffects';
@@ -24,8 +24,8 @@ const IMPACT_SPEED = 5;
  * de contact et déclenche immédiatement de nouvelles collisions.
  */
 export class MergeManager {
-  /** Fruit le plus élevé atteint pendant la partie. */
-  bestTier = 1;
+  /** Fruit le plus élevé atteint pendant la partie (les 3 premiers sont débloqués d'office). */
+  bestTier = 3;
 
   private pending: PendingMerge[] = [];
 
@@ -137,7 +137,10 @@ export class MergeManager {
     b.isMerging = true;
     a.removeBody();
     b.removeBody();
-    this.bestTier = Math.max(this.bestTier, Math.min(tier + 1, FRUITS.length));
+    // Déblocage : première apparition d'un fruit de niveau ≥ 4
+    const newTier = Math.min(tier + 1, FRUITS.length);
+    const isUnlock = newTier >= 4 && newTier > this.bestTier;
+    this.bestTier = Math.max(this.bestTier, newTier);
 
     // Les deux fruits se compressent vers le centre puis disparaissent
     a.express(FruitExpression.MERGING);
@@ -174,6 +177,51 @@ export class MergeManager {
         this.audio.playCombo(comboN);
         this.particles.comboBurst(scene.scale.width / 2, 250 * (scene.scale.height / 1280), comboN);
       }
+      // Animation de déblocage (première fois qu'on atteint un fruit ≥ 4)
+      if (isUnlock && tier < FRUITS.length) {
+        this.unlockCelebration(x, y, newTier);
+      }
+    });
+  }
+
+  /** Célébration "DÉBLOQUÉ !" au centre de l'écran : flash, confettis, nom. */
+  private unlockCelebration(x: number, y: number, tier: number): void {
+    const scene = this.scene;
+    const k = scene.scale.height / 1280;
+    const def = getFruit(tier);
+    const cx = scene.scale.width / 2;
+    const cy = scene.scale.height / 2;
+    this.screens.flash(0.55, 220);
+    this.screens.shake(0.025, 350);
+    this.audio.playCombo(6);
+    // Confettis qui se dispersent depuis le centre
+    this.particles.radialConfetti(cx, cy - 30 * k, 16);
+    this.particles.comboBurst(x, y, 8);
+
+    const text = scene.add
+      .text(cx, cy - 40 * k, `DÉBLOQUÉ !\n${def.name}`, {
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontSize: `${Math.round(52 * k)}px`,
+        color: '#e53935',
+        fontStyle: 'bold',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setDepth(60)
+      .setStroke('#ffffff', 8 * k)
+      .setScale(0.3);
+    scene.tweens.add({
+      targets: text,
+      scale: 1.15,
+      duration: 260,
+      ease: 'Back.easeOut',
+    });
+    scene.tweens.add({
+      targets: text,
+      alpha: 0,
+      delay: 1400,
+      duration: 350,
+      onComplete: () => text.destroy(),
     });
   }
 }

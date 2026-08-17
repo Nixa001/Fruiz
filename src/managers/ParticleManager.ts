@@ -72,6 +72,23 @@ export class ParticleManager {
     emitter.explode(4 + combo * 2, x, y);
   }
 
+  /** Confettis qui se dispersent tout autour d'un point (déblocage de fruit). */
+  radialConfetti(x: number, y: number, count: number): void {
+    const k = this.scene.scale.height / 1280;
+    const emitter = this.getEmitter({
+      frame: 'p_confetti',
+      speed: { min: 120, max: 330 },
+      angle: { min: 0, max: 360 },
+      gravityY: 240,
+      lifespan: { min: 600, max: 1000 },
+      scale: { start: 1.1 * k, end: 1.1 * k },
+      alpha: { start: 1, end: 0 },
+      rotate: { min: 0, max: 720 },
+      tint: [0xffc53d, 0x2d4a8e, 0xc94f3d, 0x2f9e44, 0xfff176],
+    });
+    emitter.explode(count, x, y);
+  }
+
   /** Confettis de fin de partie. */
   gameOverConfetti(): void {
     const k = this.scene.scale.height / 1280;

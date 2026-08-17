@@ -344,18 +344,27 @@ export class GameScene extends Phaser.Scene {
 
     const base = {
       isStatic: true,
-      friction: 0.7,
+      // Friction faible : les fruits glissent vers le centre au lieu
+      // de rester collés sur les parois
+      friction: 0.35,
       restitution: 0.05,
       label: WALL_LABEL,
       collisionFilter: { category: WALL_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
     };
 
-    const rInner = R - 4 * k;
-    const circleR = 0.01 * k;
+    // Fond en demi-ellipse (la hauteur du bol est indépendante de sa largeur)
+    const rInnerX = R - 4 * k;
+    const rInnerY = this.containerBottom - rimTop - 4 * k;
+    const circleR = 5 * k;
     const arcCircles = 100;
     for (let i = 0; i <= arcCircles; i++) {
       const t = (i / arcCircles) * Math.PI;
-      const body = Matter.Bodies.circle(cx + rInner * Math.cos(t), rimTop + rInner * Math.sin(t), circleR, base);
+      const body = Matter.Bodies.circle(
+        cx + rInnerX * Math.cos(t),
+        rimTop + rInnerY * Math.sin(t),
+        circleR,
+        base,
+      );
       Matter.Composite.add(engine.world, body);
       this.walls.push(body);
     }
