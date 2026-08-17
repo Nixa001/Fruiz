@@ -193,7 +193,7 @@ export class MergeManager {
     const cy = scene.scale.height / 2;
     this.screens.flash(0.55, 220);
     this.screens.shake(0.025, 350);
-    this.audio.playCombo(6);
+    this.audio.playUnlock();
     this.particles.radialConfetti(cx, cy - 30 * k, 14);
     this.particles.comboBurst(x, y, 6);
 
