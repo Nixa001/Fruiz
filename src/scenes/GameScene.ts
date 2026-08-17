@@ -320,12 +320,6 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(0x000000, 0.1);
     g.fillEllipse(cx, this.containerBottom - 16 * k, (R - 8 * k) * 1.35, 30 * k);
 
-    // Rebord (ouverture)
-    g.fillStyle(0xe9cf96, 1);
-    g.fillEllipse(cx, rimTop + 8 * k, R, 30 * k);
-    g.lineStyle(7 * k, 0x27272f, 1);
-    g.strokeEllipse(cx, rimTop + 8 * k, R, 30 * k);
-
     // Reflet haut-gauche de la coquille
     g.fillStyle(0xffffff, 0.13);
     g.fillEllipse(cx - R * 0.45, rimTop + R * 0.3, R * 0.3, R * 0.14);
