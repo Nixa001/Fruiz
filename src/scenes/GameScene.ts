@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene {
   paused = false;
   private pauseOverlay?: Phaser.GameObjects.Container;
   private pauseResumeBtn?: Phaser.GameObjects.Container;
+  private pauseRestartBtn?: Phaser.GameObjects.Container;
   private pauseMenuBtn?: Phaser.GameObjects.Container;
 
   fruits: Fruit[] = [];
@@ -83,6 +84,7 @@ export class GameScene extends Phaser.Scene {
     this.paused = false;
     this.pauseOverlay = undefined;
     this.pauseResumeBtn = undefined;
+    this.pauseRestartBtn = undefined;
     this.pauseMenuBtn = undefined;
 
     // Physique ferme : les fruits se poussent sans se superposer
@@ -576,8 +578,10 @@ export class GameScene extends Phaser.Scene {
     } else {
       // Les boutons sont créés en absolu (input fiable) : à détruire à part
       this.pauseResumeBtn?.destroy();
+      this.pauseRestartBtn?.destroy();
       this.pauseMenuBtn?.destroy();
       this.pauseResumeBtn = undefined;
+      this.pauseRestartBtn = undefined;
       this.pauseMenuBtn = undefined;
       this.pauseOverlay?.destroy();
       this.pauseOverlay = undefined;
@@ -615,13 +619,18 @@ export class GameScene extends Phaser.Scene {
     const title = this.add
       .text(cx, cy - 210 * k, 'PAUSE', {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(80 * k)}px`,
+        fontSize: `${Math.round(72 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
       .setStroke('#ffffff', 7 * k);
     overlay.add(title);
+    // trait sous le titre
+    const rule = this.add.graphics();
+    rule.lineStyle(4 * k, 0x27272f, 1);
+    rule.lineBetween(cx - 180 * k, cy - 168 * k, cx + 180 * k, cy - 168 * k);
+    overlay.add(rule);
 
     this.pauseOverlay = overlay;
     overlay.setScale(0.6).setAlpha(0);
@@ -629,35 +638,66 @@ export class GameScene extends Phaser.Scene {
 
     // Boutons (absolus : input fiable sur mobile)
     const bw = Math.min(300 * k, w * 0.65);
-    const bh = 96 * k;
+    const bh = 88 * k;
     this.pauseResumeBtn = UIHelpers.makeButton(
       this,
       {
         x: cx,
-        y: cy - 60 * k,
+        y: cy - 92 * k,
         width: bw,
         height: bh,
         label: 'REPRENDRE',
-        fill: 0xffd54f,
-        radius: 24 * k,
+        fill: 0x5772b9,
+        textColor: '#ffffff',
+        radius: 22 * k,
         depth: 85,
+        shadowColor: 0x27272f,
+        icon: 'play',
+        iconPosition: 'left',
       },
       () => {
         audioManager.playButton();
         this.togglePause();
       },
     );
+    this.pauseRestartBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy + 8 * k,
+        width: bw,
+        height: bh,
+        label: 'RECOMMENCER',
+        fill: 0xa5d6a7,
+        radius: 22 * k,
+        depth: 85,
+        shadowColor: 0x27272f,
+        fontSize: Math.round(bh * 0.34),
+      },
+      () => {
+        audioManager.playButton();
+        this.matter.world.resume();
+        this.paused = false;
+        this.pauseOverlay?.destroy();
+        this.pauseOverlay = undefined;
+        this.pauseResumeBtn?.destroy();
+        this.pauseRestartBtn?.destroy();
+        this.pauseMenuBtn?.destroy();
+        this.scene.restart();
+      },
+    );
     this.pauseMenuBtn = UIHelpers.makeButton(
       this,
       {
         x: cx,
-        y: cy + 70 * k,
+        y: cy + 108 * k,
         width: bw,
         height: bh,
         label: 'MENU',
-        fill: 0xffecb3,
-        radius: 24 * k,
+        fill: 0xe0e3e8,
+        radius: 22 * k,
         depth: 85,
+        shadowColor: 0x27272f,
       },
       () => {
         audioManager.playButton();
@@ -686,6 +726,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(800, () => {
       this.matter.world.pause();
       this.scoreManager.submit();
+      SaveManager.setUnlockedTier(this.mergeManager.bestTier);
       const data: GameOverData = {
         score: this.scoreManager.score,
         best: SaveManager.getBestScore(),

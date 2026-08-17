@@ -6,6 +6,7 @@ const KEYS = {
   bestScore: 'merge_fruits_best',
   soundEnabled: 'merge_fruits_sound',
   musicEnabled: 'merge_fruits_music',
+  unlockedTier: 'merge_fruits_unlocked',
 } as const;
 
 export class SaveManager {
@@ -65,5 +66,18 @@ export class SaveManager {
   static setMusicEnabled(enabled: boolean): void {
     SaveManager.musicEnabled = enabled;
     SaveManager.storage()?.setItem(KEYS.musicEnabled, enabled ? '1' : '0');
+  }
+
+  /** Fruit le plus haut déjà débloqué (jamais, persistant). Défaut : 3. */
+  static getUnlockedTier(): number {
+    const v = SaveManager.storage()?.getItem(KEYS.unlockedTier);
+    return v ? parseInt(v, 10) || 3 : 3;
+  }
+
+  static setUnlockedTier(tier: number): void {
+    const cur = SaveManager.getUnlockedTier();
+    if (tier > cur) {
+      SaveManager.storage()?.setItem(KEYS.unlockedTier, String(tier));
+    }
   }
 }

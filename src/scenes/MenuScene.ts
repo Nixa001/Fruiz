@@ -4,6 +4,7 @@ import { audioManager } from '../managers/AudioManager';
 import { FRUITS } from '../data/FruitData';
 import { FaceController } from '../entities/FaceController';
 import { FruitExpression } from '../types/GameTypes';
+import { SaveManager } from '../managers/SaveManager';
 
 /**
  * Menu principal animé : logo, mascotte vivante, écrans FRUITS et PARAMÈTRES.
@@ -267,7 +268,7 @@ export class MenuScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     const pw = w * 0.94;
-    const ph = h * 0.76;
+    const ph = h * 0.78;
     const cx = w / 2;
     const cy = h / 2;
 
@@ -281,61 +282,94 @@ export class MenuScene extends Phaser.Scene {
     container.add(dim);
 
     const g = this.add.graphics();
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(-pw / 2 + 6 * k, -ph / 2 + 6 * k, pw, ph, 30 * k);
     g.fillStyle(0xfff9ec, 1);
     g.fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
     g.lineStyle(6 * k, 0x27272f, 1);
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
     container.add(g);
 
-    const band = this.add.graphics();
-    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, 18 * k);
-    container.add(band);
-
+    // En-tête : Collection + compteur n/11 + trait
+    const unlockedTier = SaveManager.getUnlockedTier();
+    const unlockedCount = FRUITS.filter((f) => f.id <= unlockedTier).length;
     const title = this.add
-      .text(0, -ph / 2 + 60 * k, 'LES FRUITS', {
+      .text(-20 * k, -ph / 2 + 55 * k, 'Collection', {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(44 * k)}px`,
-        color: '#2f8f46',
+        fontSize: `${Math.round(40 * k)}px`,
+        color: '#27272f',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5)
-      .setStroke('#ffffff', 5 * k);
+      .setOrigin(0.5);
     container.add(title);
+    const leafIco = this.add.graphics();
+    UIHelpers.drawIcon(leafIco, -pw / 2 + 60 * k, -ph / 2 + 55 * k, 22 * k, 'leaf');
+    container.add(leafIco);
+    const badge = this.add.container(pw / 2 - 80 * k, -ph / 2 + 55 * k);
+    const bgBadge = this.add.graphics();
+    bgBadge.fillStyle(0xc94f3d, 1);
+    bgBadge.fillRoundedRect(-50 * k, -22 * k, 100 * k, 44 * k, 22 * k);
+    bgBadge.lineStyle(3 * k, 0x27272f, 1);
+    bgBadge.strokeRoundedRect(-50 * k, -22 * k, 100 * k, 44 * k, 22 * k);
+    badge.add(bgBadge);
+    badge.add(
+      this.add
+        .text(0, 0, `${unlockedCount}/${FRUITS.length}`, {
+          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+          fontSize: `${Math.round(24 * k)}px`,
+          color: '#ffffff',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5),
+    );
+    container.add(badge);
+    const rule = this.add.graphics();
+    rule.lineStyle(4 * k, 0x27272f, 1);
+    rule.lineBetween(-pw / 2 + 20 * k, -ph / 2 + 100 * k, pw / 2 - 20 * k, -ph / 2 + 100 * k);
+    container.add(rule);
 
-    const cols = 4;
-    const rows = 3;
+    // Grille 3x4 de cellules rondes
+    const cols = 3;
+    const rows = 4;
     const cellW = pw / cols;
-    const cellH = (ph - 130 * k) / rows;
+    const cellH = (ph - 150 * k) / rows;
     FRUITS.forEach((def, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const x = -pw / 2 + cellW * (col + 0.5);
-      const y = -ph / 2 + 130 * k + cellH * (row + 0.5);
-      // Pastille teintée de la couleur du fruit
-      const chip = this.add.graphics();
-      chip.fillStyle(def.color, 0.3);
-      chip.fillRoundedRect(x - cellW * 0.3, y - 34 * k - cellW * 0.3, cellW * 0.6, cellW * 0.6, 14 * k);
-      container.add(chip);
-      const img = this.add.image(x, y - 34 * k, `fruit_${def.id}`).setScale(k * 0.38);
-      container.add(img);
+      const y = -ph / 2 + 135 * k + cellH * (row + 0.5) - 14 * k;
+      const d = cellW * 0.6;
+      const unlocked = def.id <= unlockedTier;
+      const cell = this.add.graphics();
+      if (unlocked) {
+        cell.fillStyle(0x27272f, 1);
+        cell.fillCircle(x + 3 * k, y + 3 * k, d / 2);
+        cell.fillStyle(def.color, 0.35);
+        cell.fillCircle(x, y, d / 2);
+      } else {
+        cell.fillStyle(0xe0e3e8, 1);
+        cell.fillCircle(x, y, d / 2);
+      }
+      cell.lineStyle(4 * k, 0x27272f, 1);
+      cell.strokeCircle(x, y, d / 2);
+      container.add(cell);
+      if (unlocked) {
+        const img = this.add.image(x, y, `fruit_${def.id}`).setScale(k * 0.3);
+        container.add(img);
+      } else {
+        const lock = this.add.graphics();
+        UIHelpers.drawIcon(lock, x, y, d * 0.22, 'lock');
+        container.add(lock);
+      }
       const name = this.add
-        .text(x, y + 26 * k, def.name, {
+        .text(x, y + d / 2 + 24 * k, def.name, {
           fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-          fontSize: `${Math.round(20 * k)}px`,
-          color: '#27272f',
+          fontSize: `${Math.round(19 * k)}px`,
+          color: unlocked ? '#27272f' : '#8b716d',
           fontStyle: 'bold',
         })
         .setOrigin(0.5);
       container.add(name);
-      const pts = this.add
-        .text(x, y + 50 * k, `+${def.score}`, {
-          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-          fontSize: `${Math.round(17 * k)}px`,
-          color: '#8d6e63',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
-      container.add(pts);
     });
 
     // Bouton fermer (détruit à la fermeture pour ne pas bloquer les clics)
@@ -392,7 +426,7 @@ export class MenuScene extends Phaser.Scene {
     container.add(band);
 
     const title = this.add
-      .text(0, -ph / 2 + 60 * k, 'PARAMÈTRES', {
+      .text(20 * k, -ph / 2 + 60 * k, 'RÉGLAGES', {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(42 * k)}px`,
         color: '#27272f',
@@ -402,10 +436,10 @@ export class MenuScene extends Phaser.Scene {
       .setStroke('#ffffff', 5 * k);
     container.add(title);
 
-    this.buildToggle(container, -ph / 2 + 170 * k, 'SON', audioManager.soundEnabled, (v) =>
+    this.buildToggle(container, -ph / 2 + 170 * k, 'SON', 'volume', audioManager.soundEnabled, (v) =>
       audioManager.setSoundEnabled(v),
     );
-    this.buildToggle(container, -ph / 2 + 280 * k, 'MUSIQUE', audioManager.musicEnabled, (v) =>
+    this.buildToggle(container, -ph / 2 + 280 * k, 'MUSIQUE', 'music', audioManager.musicEnabled, (v) =>
       audioManager.setMusicEnabled(v),
     );
 
@@ -433,25 +467,26 @@ export class MenuScene extends Phaser.Scene {
     parent: Phaser.GameObjects.Container,
     y: number,
     label: string,
+    icon: 'volume' | 'music',
     initial: boolean,
     onChange: (value: boolean) => void,
   ): void {
     const k = this.k;
     let value = initial;
 
-    const zone = this.add.zone(0, y, 420 * k, 90 * k).setInteractive({ useHandCursor: true });
+    const zone = this.add.zone(0, y, 430 * k, 104 * k).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => {
       value = !value;
       onChange(value);
       audioManager.playButton();
-      this.drawToggle(state, y, value);
+      this.drawToggle(state, y, icon, value);
     });
     parent.add(zone);
 
     const labelText = this.add
-      .text(-180 * k, y, label, {
+      .text(-100 * k, y, label, {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(34 * k)}px`,
+        fontSize: `${Math.round(32 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',
       })
@@ -459,24 +494,39 @@ export class MenuScene extends Phaser.Scene {
     parent.add(labelText);
 
     const state = this.add.graphics();
-    this.drawToggle(state, y, value);
+    this.drawToggle(state, y, icon, value);
     parent.add(state);
   }
 
-  private drawToggle(g: Phaser.GameObjects.Graphics, y: number, value: boolean): void {
+  private drawToggle(
+    g: Phaser.GameObjects.Graphics,
+    y: number,
+    icon: 'volume' | 'music',
+    value: boolean,
+  ): void {
     const k = this.k;
-    const x = 120 * k;
     g.clear();
-    g.fillStyle(value ? 0x66bb6a : 0xbdbdbd, 1);
-    g.fillRoundedRect(x, y - 38 * k, 120 * k, 76 * k, 38 * k);
-    g.lineStyle(4 * k, 0x27272f, 1);
-    g.strokeRoundedRect(x, y - 38 * k, 120 * k, 76 * k, 38 * k);
-    // pastille
-    const px = value ? x + 84 * k : x + 36 * k;
+    // carte blanche
     g.fillStyle(0xffffff, 1);
-    g.fillCircle(px, y, 28 * k);
-    g.lineStyle(3 * k, 0x27272f, 1);
-    g.strokeCircle(px, y, 28 * k);
+    g.fillRoundedRect(-215 * k, y - 50 * k, 430 * k, 100 * k, 18 * k);
+    g.lineStyle(2.5 * k, 0x27272f, 1);
+    g.strokeRoundedRect(-215 * k, y - 50 * k, 430 * k, 100 * k, 18 * k);
+    // pastille icône dorée
+    g.fillStyle(0xfdc33b, 1);
+    g.fillCircle(-168 * k, y, 32 * k);
+    g.lineStyle(2.5 * k, 0x27272f, 1);
+    g.strokeCircle(-168 * k, y, 32 * k);
+    UIHelpers.drawIcon(g, -168 * k, y, 26 * k, icon);
+    // interrupteur
+    const sx = 118 * k;
+    g.fillStyle(value ? 0x4ade80 : 0xbdbdbd, 1);
+    g.fillRoundedRect(sx, y - 32 * k, 108 * k, 64 * k, 32 * k);
+    g.lineStyle(2.5 * k, 0x27272f, 1);
+    g.strokeRoundedRect(sx, y - 32 * k, 108 * k, 64 * k, 32 * k);
+    const px = value ? sx + 76 * k : sx + 32 * k;
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(px, y, 26 * k);
+    g.strokeCircle(px, y, 26 * k);
   }
 
   private closePanel(): void {

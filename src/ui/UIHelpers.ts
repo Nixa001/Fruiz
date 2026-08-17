@@ -14,7 +14,7 @@ export interface ButtonOptions {
   /** Ombre portée "brutale" (décalage plein, pas de flou). */
   shadowColor?: number;
   /** Icône optionnelle (dessinée en Graphics). */
-  icon?: 'play' | 'pause' | 'leaf' | 'gear';
+  icon?: 'play' | 'pause' | 'leaf' | 'gear' | 'lock' | 'volume' | 'music';
   iconPosition?: 'left' | 'top';
 }
 
@@ -112,13 +112,13 @@ export class UIHelpers {
     return container;
   }
 
-  /** Icônes simples dessinées (play, pause, feuille, engrenage). */
-  private static drawIcon(
+  /** Icônes simples dessinées (play, pause, feuille, engrenage, cadenas, son, note). */
+  static drawIcon(
     g: Phaser.GameObjects.Graphics,
     x: number,
     y: number,
     s: number,
-    type: 'play' | 'pause' | 'leaf' | 'gear',
+    type: 'play' | 'pause' | 'leaf' | 'gear' | 'lock' | 'volume' | 'music',
   ): void {
     if (type === 'play') {
       g.fillStyle(0x27272f, 1);
@@ -127,6 +127,28 @@ export class UIHelpers {
       g.fillStyle(0x27272f, 1);
       g.fillRect(x - s * 0.45, y - s * 0.6, s * 0.34, s * 1.2);
       g.fillRect(x + s * 0.11, y - s * 0.6, s * 0.34, s * 1.2);
+    } else if (type === 'lock') {
+      g.fillStyle(0x27272f, 1);
+      g.fillRoundedRect(x - s * 0.5, y - s * 0.1, s, s * 0.75, s * 0.12);
+      g.lineStyle(s * 0.16, 0x27272f, 1);
+      g.beginPath();
+      g.arc(x, y - s * 0.05, s * 0.3, Math.PI, 0, false);
+      g.strokePath();
+    } else if (type === 'volume') {
+      g.fillStyle(0x27272f, 1);
+      g.fillTriangle(x - s * 0.5, y - s * 0.25, x - s * 0.5, y + s * 0.25, x - s * 0.1, y);
+      g.lineStyle(s * 0.14, 0x27272f, 1);
+      g.beginPath();
+      g.arc(x - s * 0.1, y, s * 0.4, -0.9, 0.9, false);
+      g.strokePath();
+      g.beginPath();
+      g.arc(x - s * 0.1, y, s * 0.7, -0.7, 0.7, false);
+      g.strokePath();
+    } else if (type === 'music') {
+      g.fillStyle(0x27272f, 1);
+      g.fillCircle(x - s * 0.35, y + s * 0.3, s * 0.22);
+      g.fillRect(x - s * 0.15, y - s * 0.6, s * 0.14, s * 0.9);
+      g.fillTriangle(x - s * 0.15, y - s * 0.55, x + s * 0.4, y - s * 0.35, x - s * 0.02, y - s * 0.1);
     } else if (type === 'leaf') {
       g.fillStyle(0x2f9e44, 1);
       g.fillEllipse(x + s * 0.2, y, s * 0.55, s * 0.3);
