@@ -154,7 +154,7 @@ export class GameOverScene extends Phaser.Scene {
     // Boutons en bas de la carte
     const bw = Math.min(340 * k, w * 0.72);
     const bh = 64 * k;
-    const btnY1 = cy + ph / 2 - 104 * k;
+    const btnY1 = cy + ph / 2 - 132 * k;
     UIHelpers.makeButton(
       this,
       {

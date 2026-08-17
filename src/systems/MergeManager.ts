@@ -8,8 +8,6 @@ import { AudioManager } from '../managers/AudioManager';
 import { ScoreManager } from './ScoreManager';
 import { ComboManager } from './ComboManager';
 import { ComboPopup } from '../ui/ComboPopup';
-import { UIHelpers } from '../ui/UIHelpers';
-import { audioManager } from '../managers/AudioManager';
 import type { GameScene } from '../scenes/GameScene';
 
 interface PendingMerge {
@@ -186,7 +184,7 @@ export class MergeManager {
     });
   }
 
-  /** Célébration "DÉBLOQUÉ !" : panneau terracotta, fruit dans une pastille, bouton SUPER. */
+  /** Célébration "DÉBLOQUÉ !" simple : petite carte, fruit, nom, auto-fermeture. */
   private unlockCelebration(x: number, y: number, tier: number): void {
     const scene = this.scene;
     const k = scene.scale.height / 1280;
@@ -196,101 +194,51 @@ export class MergeManager {
     this.screens.flash(0.55, 220);
     this.screens.shake(0.025, 350);
     this.audio.playCombo(6);
-    this.particles.radialConfetti(cx, cy - 30 * k, 16);
-    this.particles.comboBurst(x, y, 8);
+    this.particles.radialConfetti(cx, cy - 30 * k, 14);
+    this.particles.comboBurst(x, y, 6);
 
     const panel = scene.add.container(cx, cy).setDepth(60).setScale(0.4);
     const g = scene.add.graphics();
-    g.fillStyle(0xffc53d, 1);
-    g.fillRoundedRect(-215 * k + 7 * k, -185 * k + 7 * k, 430 * k, 370 * k, 28 * k);
-    g.fillStyle(0xc94f3d, 1);
-    g.fillRoundedRect(-215 * k, -185 * k, 430 * k, 370 * k, 28 * k);
-    g.lineStyle(5 * k, 0x27272f, 1);
-    g.strokeRoundedRect(-215 * k, -185 * k, 430 * k, 370 * k, 28 * k);
-    const dots = [0xffc53d, 0x4ade80, 0x2d4a8e, 0xfff176];
-    for (let i = 0; i < 14; i++) {
-      const dx = -190 * k + ((i * 97 * k) % (380 * k));
-      const dy = -160 * k + ((i * 61 * k) % (320 * k));
-      g.fillStyle(dots[i % dots.length], 0.5);
-      g.fillCircle(dx, dy, 5 * k);
-    }
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(-170 * k + 6 * k, -100 * k + 6 * k, 340 * k, 200 * k, 22 * k);
+    g.fillStyle(0xfff9ec, 1);
+    g.fillRoundedRect(-170 * k, -100 * k, 340 * k, 200 * k, 22 * k);
+    g.lineStyle(4 * k, 0x27272f, 1);
+    g.strokeRoundedRect(-170 * k, -100 * k, 340 * k, 200 * k, 22 * k);
     panel.add(g);
 
-    // Pastille blanche avec le fruit qui rebondit
-    const circle = scene.add.container(0, -72 * k);
-    const cg = scene.add.graphics();
-    cg.fillStyle(0x27272f, 1);
-    cg.fillCircle(4 * k, 4 * k, 62 * k);
-    cg.fillStyle(0xfffdf5, 1);
-    cg.fillCircle(0, 0, 62 * k);
-    cg.lineStyle(4 * k, 0x27272f, 1);
-    cg.strokeCircle(0, 0, 62 * k);
-    circle.add(cg);
-    circle.add(scene.add.image(0, 0, `fruit_${def.id}`).setScale(k * 0.42));
-    panel.add(circle);
-    scene.tweens.add({
-      targets: circle,
-      y: circle.y - 10 * k,
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
-
+    panel.add(scene.add.image(0, 52 * k, `fruit_${def.id}`).setScale(k * 0.42));
     const title = scene.add
-      .text(0, 20 * k, 'DÉBLOQUÉ !', {
+      .text(0, -52 * k, 'DÉBLOQUÉ !', {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(54 * k)}px`,
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setStroke('#27272f', 6 * k);
-    panel.add(title);
-    const sub = scene.add
-      .text(0, 82 * k, `Nouvel Ami Fruit : ${def.name}`, {
-        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(26 * k)}px`,
-        color: '#ffdad4',
+        fontSize: `${Math.round(40 * k)}px`,
+        color: '#c94f3d',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
-    panel.add(sub);
-
-    // Bouton SUPER (ferme le popup)
-    const superBtn = UIHelpers.makeButton(
-      scene,
-      {
-        x: cx,
-        y: cy + 128 * k,
-        width: 240 * k,
-        height: 76 * k,
-        label: 'SUPER',
-        fill: 0xfdc33b,
-        radius: 18 * k,
-        depth: 62,
-        shadowColor: 0x27272f,
-        fontSize: Math.round(76 * k * 0.34),
-      },
-      () => {
-        audioManager.playButton();
-        panel.destroy();
-        superBtn.destroy();
-      },
-    );
-    superBtn.setVisible(false);
+    panel.add(title);
+    const name = scene.add
+      .text(0, -4 * k, def.name, {
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontSize: `${Math.round(26 * k)}px`,
+        color: '#27272f',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
+    panel.add(name);
 
     scene.tweens.add({
       targets: panel,
       scale: 1,
       duration: 260,
       ease: 'Back.easeOut',
-      onComplete: () => superBtn.setVisible(true),
     });
-    // Disparition automatique après 2,2 s
-    scene.time.delayedCall(2200, () => {
-      panel.destroy();
-      superBtn.destroy();
+    scene.tweens.add({
+      targets: panel,
+      alpha: 0,
+      delay: 1600,
+      duration: 300,
+      onComplete: () => panel.destroy(),
     });
   }
 }

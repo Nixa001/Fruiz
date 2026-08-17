@@ -518,7 +518,7 @@ export class MenuScene extends Phaser.Scene {
     g.strokeCircle(-168 * k, y, 32 * k);
     UIHelpers.drawIcon(g, -168 * k, y, 26 * k, icon);
     // interrupteur
-    const sx = 118 * k;
+    const sx = 90 * k;
     g.fillStyle(value ? 0x4ade80 : 0xbdbdbd, 1);
     g.fillRoundedRect(sx, y - 32 * k, 108 * k, 64 * k, 32 * k);
     g.lineStyle(2.5 * k, 0x27272f, 1);
