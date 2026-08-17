@@ -50,6 +50,8 @@ export class GameScene extends Phaser.Scene {
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
+  /** Accumulateur du balayage anti-coincement (fruits qui flottent). */
+  private unstickAccum = 0;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
   private pendingNextReveal: Fruit | null = null;
   private dropSpawnY = 0;
@@ -172,6 +174,13 @@ export class GameScene extends Phaser.Scene {
     this.scoreUI.update(this.scoreManager.score, this.scoreManager.best);
     this.dangerManager.update(this.fruits);
     this.evolutionBar.setProgress(this.mergeManager.bestTier);
+    // Balayage anti-coincement : réveille les fruits endormis en l'air
+    // ou collés sur les parois sans support
+    this.unstickAccum += this.game.loop.delta;
+    if (this.unstickAccum >= 500) {
+      this.unstickAccum = 0;
+      this.unstickSleepingFruits();
+    }
     // Révélation du fruit suivant : quand le fruit lâché atteint la mi-parcours
     // (ou s'il a fusionné en vol), le fruit EN MAIN apparaît au point de départ
     // et la carte NEXT avance au fruit d'après
@@ -380,6 +389,43 @@ export class GameScene extends Phaser.Scene {
     for (const body of corners) {
       Matter.Composite.add(engine.world, body);
       this.walls.push(body);
+    }
+  }
+
+  /**
+   * Un fruit endormi doit toucher le fond du bol ou reposer sur un autre
+   * fruit. Sinon (coincé sur une paroi, suspendu) : on le réveille avec
+   * une petite impulsion pour qu'il retombe.
+   */
+  private unstickSleepingFruits(): void {
+    const k = this.scaleK;
+    const rX = (this.containerRight - this.containerLeft) / 2 - 4 * k;
+    const rY = this.containerBottom - this.containerTop - 4 * k;
+    for (const f of this.fruits) {
+      if (f.isRemoved || !f.body || !f.body.isSleeping) continue;
+      const p = f.body.position;
+      const dx = p.x - this.cx;
+      if (Math.abs(dx) > rX) continue; // hors bol : règle d'échappement
+      const t = dx / rX;
+      const floorY = this.containerTop + rY * Math.sqrt(Math.max(0, 1 - t * t)) - f.physicsRadius;
+      if (p.y >= floorY - 4) continue; // posé sur le fond : normal
+      // Soutenu par un autre fruit en dessous ?
+      let supported = false;
+      for (const o of this.fruits) {
+        if (o === f || o.isRemoved || !o.body) continue;
+        if (o.body.position.y <= p.y) continue;
+        const ddx = o.body.position.x - p.x;
+        const ddy = o.body.position.y - p.y;
+        const minD = (o.physicsRadius + f.physicsRadius) * 0.85;
+        if (ddx * ddx + ddy * ddy < minD * minD) {
+          supported = true;
+          break;
+        }
+      }
+      if (!supported) {
+        Matter.Sleeping.set(f.body, false);
+        f.body.velocity.y = 0.6;
+      }
     }
   }
 

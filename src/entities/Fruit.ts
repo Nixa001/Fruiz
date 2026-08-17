@@ -89,7 +89,7 @@ export class Fruit extends Phaser.GameObjects.Container {
       density: 0.0011,
       frictionAir: 0.008,
       slop: 0.02,
-      sleepThreshold: 60,
+      sleepThreshold: 150,
       label: FRUIT_LABEL,
       collisionFilter: { category: FRUIT_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
     });
