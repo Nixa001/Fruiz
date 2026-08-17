@@ -89,6 +89,14 @@ export class FaceController {
     this.mouth = scene.add.graphics();
     this.root.add([this.brows, this.mouth]);
 
+    // Joues rosées permanentes (charme cartoon, discret)
+    const cheeks = scene.add.graphics();
+    cheeks.fillStyle(0xe57373, 0.28);
+    for (const sx of [-1, 1]) {
+      cheeks.fillEllipse(sx * 0.46 * r, 0.16 * r, 0.13 * r, 0.09 * r);
+    }
+    this.root.add(cheeks);
+
     this.setExpression(FruitExpression.IDLE);
 
     // Clignements et regards furtifs aléatoires (auto-reprogrammés)

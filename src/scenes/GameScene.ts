@@ -370,7 +370,7 @@ export class GameScene extends Phaser.Scene {
       const t = (i / arcCircles) * Math.PI;
       const body = Matter.Bodies.circle(
         cx + rInnerX * Math.cos(t),
-        rimTop + rInnerY * Math.sin(t),
+        rimTop + rInnerY * Math.sin(t) + 5 * k,
         circleR,
         base,
       );
@@ -381,10 +381,12 @@ export class GameScene extends Phaser.Scene {
     // Petites butées d'angle au rebord (gauche et droite) :
     // rattrapent les fruits lâchés trop près des bords, qui rebondissent
     // dessus et roulent dans le bol (visibles en rouge dans le debug)
-    const cornerR = 14 * k;
+    // Petites corniches horizontales aux angles du rebord (lignes plates)
+    const cornerW = 36 * k;
+    const cornerH = 6 * k;
     const corners = [
-      Matter.Bodies.circle(this.containerLeft - 8 * k, rimTop + 16 * k, cornerR, base),
-      Matter.Bodies.circle(this.containerRight + 8 * k, rimTop + 16 * k, cornerR, base),
+      Matter.Bodies.rectangle(this.containerLeft - 8 * k, rimTop + 0.01 * k, cornerW, cornerH, base),
+      Matter.Bodies.rectangle(this.containerRight + 8 * k, rimTop + 0.01 * k, cornerW, cornerH, base),
     ];
     for (const body of corners) {
       Matter.Composite.add(engine.world, body);

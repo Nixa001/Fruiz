@@ -110,6 +110,7 @@ export class FruitRenderer {
         break;
       default:
         FruitRenderer.drawCircleBase(ctx, def, r);
+        FruitRenderer.drawSurfaceDetails(ctx, def, r);
         if (def.id === 4) FruitRenderer.drawGoyaveNubs(ctx, r); // Goyave
         if (def.id === 8) FruitRenderer.drawCocoFiber(ctx, def, r); // Coco
     }
@@ -141,10 +142,11 @@ export class FruitRenderer {
     cx = 0,
     cy = 0,
   ): void {
-    const g = ctx.createRadialGradient(cx - radius * 0.35, cy - radius * 0.4, radius * 0.1, cx, cy, radius * 1.05);
-    g.addColorStop(0, FruitRenderer.shade(def.color, 0.35));
-    g.addColorStop(0.55, FruitRenderer.hexToCss(def.color));
-    g.addColorStop(1, FruitRenderer.hexToCss(def.colorDark));
+    const g = ctx.createRadialGradient(cx - radius * 0.35, cy - radius * 0.4, radius * 0.1, cx, cy, radius * 1.08);
+    g.addColorStop(0, FruitRenderer.shade(def.color, 0.38));
+    g.addColorStop(0.45, FruitRenderer.hexToCss(def.color));
+    g.addColorStop(0.8, FruitRenderer.hexToCss(def.colorDark));
+    g.addColorStop(1, FruitRenderer.shade(def.colorDark, -0.18));
     ctx.fillStyle = g;
     ctx.fill();
   }
@@ -169,6 +171,85 @@ export class FruitRenderer {
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     FruitRenderer.fillGradient(ctx, def, radius, cx, cy);
     FruitRenderer.strokeOutline(ctx);
+    // Liseré lumineux discret à l'intérieur du contour (haut-gauche)
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 0.82, -2.55, -2.15, false);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = radius * 0.07;
+    ctx.stroke();
+  }
+
+  /** Petits détails de surface par fruit (discrets, pas de blancs). */
+  private static drawSurfaceDetails(ctx: CanvasRenderingContext2D, def: FruitDefinition, r: number): void {
+    ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.28);
+    switch (def.id) {
+      case 1: // Gigibier : petites mouchetures
+        for (const [sx, sy] of [[-0.35, -0.15], [0.3, 0.1], [-0.15, 0.35], [0.45, -0.3], [0.05, -0.5]] as [number, number][]) {
+          ctx.beginPath();
+          ctx.arc(sx * r, sy * r, r * 0.04, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case 2: // Soump : reflet latéral
+        ctx.beginPath();
+        ctx.arc(r * 0.15, -r * 0.1, r * 0.72, -0.7, 0.35, false);
+        ctx.strokeStyle = FruitRenderer.shade(def.color, 0.25);
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = r * 0.1;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      case 3: // Ditakh : lenticelles
+        for (const [sx, sy] of [[-0.3, 0.25], [0.35, 0.3], [-0.4, -0.25]] as [number, number][]) {
+          ctx.beginPath();
+          ctx.arc(sx * r, sy * r, r * 0.045, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case 5: // Tol : point d'attache + pli
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.82, r * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, r * 0.15, r * 0.55, -0.5, 0.5, false);
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.2);
+        ctx.lineWidth = r * 0.06;
+        ctx.stroke();
+        break;
+      case 6: // Bouye : taches veloutées
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.15);
+        for (const [sx, sy, rx, ry] of [[-0.4, -0.2, 0.25, 0.18], [0.35, 0.3, 0.3, 0.2]] as [number, number, number, number][]) {
+          ctx.beginPath();
+          ctx.ellipse(sx * r, sy * r, rx * r, ry * r, 0.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      case 7: // Kola : sillon vertical
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.6);
+        ctx.quadraticCurveTo(r * 0.18, 0, 0, r * 0.6);
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.3);
+        ctx.lineWidth = r * 0.06;
+        ctx.stroke();
+        break;
+      case 9: // New : point d'attache
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.85, r * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case 10: // Karité : couture + attache
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.82, r * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.1, r * 0.6, -1.1, 1.1, false);
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.18);
+        ctx.lineWidth = r * 0.05;
+        ctx.stroke();
+        break;
+      default:
+        break;
+    }
   }
 
   private static drawEllipseBase(
