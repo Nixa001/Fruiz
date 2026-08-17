@@ -11,6 +11,11 @@ export interface ButtonOptions {
   fontSize?: number;
   radius?: number;
   depth?: number;
+  /** Ombre portée "brutale" (décalage plein, pas de flou). */
+  shadowColor?: number;
+  /** Icône optionnelle (dessinée en Graphics). */
+  icon?: 'play' | 'pause' | 'leaf' | 'gear';
+  iconPosition?: 'left' | 'top';
 }
 
 /** Helpers UI cartoon partagés entre les scènes. */
@@ -45,29 +50,46 @@ export class UIHelpers {
     g.lineBetween(54 * scaleK, 0, 54 * scaleK, h);
   }
 
-  /** Bouton cartoon : ombre portée, contour épais, rebond au tap. */
+  /** Bouton cartoon "brutal" : ombre décalée pleine, contour épais, icône, rebond. */
   static makeButton(scene: Phaser.Scene, opts: ButtonOptions, onClick: () => void): Phaser.GameObjects.Container {
     const { x, y, width, height, label, fill, radius = 20 } = opts;
     const depth = opts.depth ?? 10;
     const fontSize = opts.fontSize ?? Math.round(height * 0.42);
     const container = scene.add.container(x, y).setDepth(depth);
+    const off = Math.max(4, Math.round(height * 0.07));
 
+    // Ombre "brutale" : bloc plein décalé
     const shadow = scene.add.graphics();
-    shadow.fillStyle(0x000000, 0.18);
-    shadow.fillRoundedRect(-width / 2 + 5, -height / 2 + 7, width, height, radius);
+    shadow.fillStyle(opts.shadowColor ?? 0x000000, 1);
+    shadow.fillRoundedRect(-width / 2 + off, -height / 2 + off, width, height, radius);
     container.add(shadow);
 
     const body = scene.add.graphics();
     body.fillStyle(fill, 1);
     body.fillRoundedRect(-width / 2, -height / 2, width, height, radius);
-    body.lineStyle(5, 0x27272f, 1);
+    body.lineStyle(4, 0x27272f, 1);
     body.strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
-    body.fillStyle(0xffffff, 0.25);
-    body.fillRoundedRect(-width / 2 + 8, -height / 2 + 6, width - 16, height * 0.32, radius * 0.6);
+    body.fillStyle(0xffffff, 0.22);
+    body.fillRoundedRect(-width / 2 + 8, -height / 2 + 6, width - 16, height * 0.3, radius * 0.6);
     container.add(body);
 
+    // Icône éventuelle
+    const iconPos = opts.iconPosition ?? 'left';
+    let textY = 2;
+    if (opts.icon) {
+      const ig = scene.add.graphics();
+      if (iconPos === 'left') {
+        const ix = label ? -width / 2 + height * 0.62 : 0;
+        UIHelpers.drawIcon(ig, ix, 0, height * 0.28, opts.icon);
+      } else {
+        UIHelpers.drawIcon(ig, 0, -height * 0.2, height * 0.26, opts.icon);
+        textY = height * 0.16;
+      }
+      container.add(ig);
+    }
+
     const text = scene.add
-      .text(0, 2, label, {
+      .text(0, textY, label, {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${fontSize}px`,
         color: opts.textColor ?? '#27272f',
@@ -83,11 +105,44 @@ export class UIHelpers {
       const now = performance.now();
       if (now - lastClickAt < 250) return;
       lastClickAt = now;
-      scene.tweens.add({ targets: container, scale: 0.92, duration: 70, yoyo: true, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: container, scale: 0.93, duration: 70, yoyo: true, ease: 'Quad.easeOut' });
       onClick();
     });
     container.add(zone);
     return container;
+  }
+
+  /** Icônes simples dessinées (play, pause, feuille, engrenage). */
+  private static drawIcon(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    s: number,
+    type: 'play' | 'pause' | 'leaf' | 'gear',
+  ): void {
+    if (type === 'play') {
+      g.fillStyle(0x27272f, 1);
+      g.fillTriangle(x - s * 0.45, y - s * 0.6, x - s * 0.45, y + s * 0.6, x + s * 0.7, y);
+    } else if (type === 'pause') {
+      g.fillStyle(0x27272f, 1);
+      g.fillRect(x - s * 0.45, y - s * 0.6, s * 0.34, s * 1.2);
+      g.fillRect(x + s * 0.11, y - s * 0.6, s * 0.34, s * 1.2);
+    } else if (type === 'leaf') {
+      g.fillStyle(0x2f9e44, 1);
+      g.fillEllipse(x + s * 0.2, y, s * 0.55, s * 0.3);
+      g.lineStyle(2, 0x27272f, 1);
+      g.lineBetween(x + s * 0.6, y - s * 0.25, x + s * 0.85, y - s * 0.55);
+    } else {
+      g.lineStyle(3, 0x3d599e, 1);
+      g.strokeCircle(x, y, s * 0.55);
+      g.fillStyle(0x3d599e, 1);
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        g.fillRect(x + Math.cos(a) * s * 0.45 - 1.5, y + Math.sin(a) * s * 0.45 - 1.5, 3, 3);
+      }
+      g.fillStyle(0xfff9ec, 1);
+      g.fillCircle(x, y, s * 0.18);
+    }
   }
 
   /**

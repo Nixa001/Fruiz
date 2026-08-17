@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import { FRUITS } from '../data/FruitData';
 
 /**
- * Barre d'évolution en bas de l'écran : les 12 fruits alignés.
- * Les fruits déjà atteints sont en couleur, les autres estompés.
+ * Barre d'évolution en bas de l'écran : les fruits alignés en taille
+ * croissante. Atteints en couleur, verrouillés en silhouette noire.
  */
 export class EvolutionBar {
   private sprites: Phaser.GameObjects.Image[] = [];

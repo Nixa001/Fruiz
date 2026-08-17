@@ -51,7 +51,7 @@ export class MenuScene extends Phaser.Scene {
     // La mascotte réagit au tap
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (!this.mascotFace) return;
-      const mascotY = 760 * k;
+      const mascotY = 545 * k;
       if (Math.abs(pointer.x - w / 2) < 150 * k && Math.abs(pointer.y - mascotY) < 150 * k) {
         this.mascotFace.setExpression(FruitExpression.CELEBRATING);
         this.time.delayedCall(1200, () => this.mascotFace?.setExpression(FruitExpression.IDLE));
@@ -93,18 +93,30 @@ export class MenuScene extends Phaser.Scene {
     const k = this.k;
     const w = this.scale.width;
 
-    const title = UIHelpers.makeText(this, w / 2, 160 * k, 'MERGE', 110 * k, '#27272f');
-    title.setStroke('#ffffff', 10 * k);
-    const title2 = UIHelpers.makeText(this, w / 2, 300 * k, 'FRUITS', 110 * k, '#2f8f46');
-    title2.setStroke('#ffffff', 10 * k);
-    const sub = UIHelpers.makeText(this, w / 2, 425 * k, '✦ FRUIZ ✦', 52 * k, '#c94f3d');
-    sub.setStroke('#ffffff', 7 * k);
-
-    // Titre vivant : balancement arcade
+    // Carte logo FRUIZ (ombre indigo décalée, rebond lent)
+    const card = this.add.container(w / 2, 200 * k).setDepth(5);
+    const g = this.add.graphics();
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(-160 * k + 6 * k, -58 * k + 6 * k, 320 * k, 116 * k, 24 * k);
+    g.fillStyle(0xfff9ec, 1);
+    g.fillRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
+    g.lineStyle(4 * k, 0x27272f, 1);
+    g.strokeRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
+    card.add(g);
+    const logoText = this.add
+      .text(0, 0, 'FRUIZ', {
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontSize: `${Math.round(76 * k)}px`,
+        color: '#c94f3d',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setStroke('#ffffff', 6 * k);
+    card.add(logoText);
     this.tweens.add({
-      targets: [title, title2],
-      angle: { from: -1.6, to: 1.6 },
-      duration: 900,
+      targets: card,
+      y: card.y - 14 * k,
+      duration: 2000,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
@@ -112,32 +124,32 @@ export class MenuScene extends Phaser.Scene {
 
     // Étincelles ambiantes qui montent
     this.add
-      .particles(0, 0, 'p_dot', {
+      .particles(0, 0, 'p_star', {
         x: { min: 0, max: w },
         y: this.scale.height + 12,
         lifespan: 7000,
         speedY: { min: -45, max: -90 },
         speedX: { min: -16, max: 16 },
-        scale: { start: 0.55 * k, end: 0 },
-        alpha: { start: 0.35, end: 0 },
-        frequency: 480,
-        quantity: 2,
-        tint: [0xffd54f, 0xffecb3, 0xa5d6a7, 0xffab91],
+        scale: { start: 0.5 * k, end: 0 },
+        alpha: { start: 0.5, end: 0 },
+        frequency: 1600,
+        quantity: 1,
+        tint: [0xffc53d, 0xffd54f, 0xffecb3],
       })
       .setDepth(2);
 
-    // Mascotte pastèque vivante
-    const mascotY = 670 * k;
+    // Mascotte pastèque vivante (grosse, au centre)
+    const mascotY = 545 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
-    const img = this.add.image(0, 0, 'fruit_11').setScale(k);
+    const img = this.add.image(0, 0, 'fruit_11').setScale(k * 1.05);
     mascot.add(img);
-    this.mascotFace = new FaceController(this, 104, k);
+    this.mascotFace = new FaceController(this, 104, k * 1.05);
     mascot.add(this.mascotFace.root);
     this.tweens.add({
       targets: mascot,
-      y: mascotY - 36 * k,
-      angle: 6,
-      duration: 650,
+      y: mascotY - 22 * k,
+      angle: 4,
+      duration: 1500,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
@@ -147,36 +159,66 @@ export class MenuScene extends Phaser.Scene {
   private buildButtons(): void {
     const k = this.k;
     const w = this.scale.width;
-    const bw = Math.min(340 * k, w * 0.78);
-    const bh = 104 * k;
-    const y0 = 900 * k;
-    const gap = 128 * k;
-
-    // Natte secko derrière les boutons (le menu pose sur un paillasson tressé)
+    const h = this.scale.height;
+    // Natte ancrée en bas, au-dessus de la bande wax
+    const matW = Math.min(w, 460 * k);
+    const matH = 272 * k;
+    const matTop = h - 26 * k - matH - 100 * k;
     const mat = this.add.graphics().setDepth(2);
-    UIHelpers.drawSeckoMat(mat, w / 2 - (bw + 74 * k) / 2, y0 - 68 * k, bw + 74 * k, gap * 2 + 132 * k);
+    UIHelpers.drawSeckoMat(mat, w / 2 - matW / 2, matTop, matW, matH);
+
+    const bw = matW - 48 * k;
+    const bh = 92 * k;
+    const yJouer = matTop + 36 * k + bh / 2;
 
     const playBtn = UIHelpers.makeButton(
       this,
-      { x: w / 2, y: y0, width: bw, height: bh, label: 'JOUER', fill: 0xffd54f, radius: 26 * k },
+      {
+        x: w / 2,
+        y: yJouer,
+        width: bw,
+        height: bh,
+        label: 'JOUER',
+        fill: 0xfdc33b,
+        radius: 20 * k,
+        shadowColor: 0xffc53d,
+        icon: 'play',
+        iconPosition: 'left',
+        fontSize: Math.round(bh * 0.38),
+      },
       () => {
         audioManager.playButton();
         this.scene.stop();
         this.scene.start('Game');
       },
     );
-    // Le bouton JOUER attire l'œil : pulsation douce
     this.tweens.add({
       targets: playBtn,
-      scale: 1.045,
+      scale: 1.03,
       duration: 600,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    const b2w = (bw - 16 * k) / 2;
+    const b2h = 86 * k;
+    const y2 = yJouer + bh / 2 + 24 * k + b2h / 2;
     const fruitsBtn = UIHelpers.makeButton(
       this,
-      { x: w / 2, y: y0 + gap, width: bw, height: bh, label: 'FRUITS', fill: 0xa5d6a7, radius: 26 * k },
+      {
+        x: w / 2 - b2w / 2 - 8 * k,
+        y: y2,
+        width: b2w,
+        height: b2h,
+        label: 'FRUITS',
+        fill: 0xfff9ec,
+        radius: 16 * k,
+        shadowColor: 0xc94f3d,
+        icon: 'leaf',
+        iconPosition: 'top',
+        fontSize: Math.round(b2h * 0.3),
+      },
       () => {
         audioManager.playButton();
         this.openFruitsPanel();
@@ -184,7 +226,19 @@ export class MenuScene extends Phaser.Scene {
     );
     const paramsBtn = UIHelpers.makeButton(
       this,
-      { x: w / 2, y: y0 + gap * 2, width: bw, height: bh, label: 'PARAMÈTRES', fill: 0xffecb3, radius: 26 * k },
+      {
+        x: w / 2 + b2w / 2 + 8 * k,
+        y: y2,
+        width: b2w,
+        height: b2h,
+        label: 'PARAMÈTRES',
+        fill: 0xfff9ec,
+        radius: 16 * k,
+        shadowColor: 0xc94f3d,
+        icon: 'gear',
+        iconPosition: 'top',
+        fontSize: Math.round(b2h * 0.26),
+      },
       () => {
         audioManager.playButton();
         this.openSettingsPanel();

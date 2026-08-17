@@ -177,7 +177,7 @@ export class GameScene extends Phaser.Scene {
     // Balayage anti-coincement : réveille les fruits endormis en l'air
     // ou collés sur les parois sans support
     this.unstickAccum += this.game.loop.delta;
-    if (this.unstickAccum >= 500) {
+    if (this.unstickAccum >= 800) {
       this.unstickAccum = 0;
       this.unstickSleepingFruits();
     }
@@ -200,9 +200,10 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < this.fruits.length; i++) {
       this.fruits[i].setDepth(10 + i);
     }
-    // Les fruits regardent le prochain fruit à lancer
+    // Les fruits regardent le prochain fruit à lancer (éveillés seulement :
+    // les endormis n'ont pas besoin de bouger les yeux chaque frame)
     for (const fruit of this.fruits) {
-      fruit.lookAt(this.previewX, this.previewY);
+      if (!fruit.body.isSleeping) fruit.lookAt(this.previewX, this.previewY);
     }
   }
 
