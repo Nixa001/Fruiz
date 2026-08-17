@@ -224,7 +224,7 @@ export class GameScene extends Phaser.Scene {
     this.containerTop = this.containerBottom - halfW;
     // Le fruit est lancé depuis le haut, mais descendu pour réduire la chute
     this.previewY = 300 * k;
-    this.matter.world.setGravity(0, 1.4 * k);
+    this.matter.world.setGravity(0, 1.1 * k);
   }
 
   private onResize(): void {
