@@ -44,7 +44,7 @@ export class ScoreManager {
     const color = gain >= 500 ? '#e53935' : big ? '#ff8f00' : '#27272f';
     const text = this.scene.add
       .text(x, y, `+${gain}`, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(36 * k * (big ? 1.3 : 1))}px`,
         color,
         fontStyle: 'bold',

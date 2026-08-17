@@ -23,7 +23,7 @@ export class ScoreUI {
     g.strokeRoundedRect(x, y, cardW, cardH, 18 * k);
 
     const labelStyle = (size: number, color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
-      fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+      fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
       fontSize: `${Math.round(size * k)}px`,
       color,
       fontStyle: 'bold',

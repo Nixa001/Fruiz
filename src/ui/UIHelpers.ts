@@ -68,7 +68,7 @@ export class UIHelpers {
 
     const text = scene.add
       .text(0, 2, label, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${fontSize}px`,
         color: opts.textColor ?? '#27272f',
         fontStyle: 'bold',
@@ -77,12 +77,52 @@ export class UIHelpers {
     container.add(text);
 
     const zone = scene.add.zone(0, 0, width, height).setInteractive({ useHandCursor: true });
+    // Anti double-tap : ignore les clics répétés à moins de 250 ms
+    let lastClickAt = 0;
     zone.on('pointerdown', () => {
+      const now = performance.now();
+      if (now - lastClickAt < 250) return;
+      lastClickAt = now;
       scene.tweens.add({ targets: container, scale: 0.92, duration: 70, yoyo: true, ease: 'Quad.easeOut' });
       onClick();
     });
     container.add(zone);
     return container;
+  }
+
+  /**
+   * Bande "tissu wax" sénégalaise : zigzag indigo / or / terracotta / vert.
+   * Élément signature de l'identité visuelle du jeu.
+   */
+  static drawWaxBand(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number): void {
+    const colors = [0x2d4a8e, 0xffc53d, 0xc94f3d, 0x2f9e44];
+    const triW = h * 2;
+    let ci = 0;
+    for (let px = x; px < x + w; px += triW) {
+      g.fillStyle(colors[ci % colors.length], 1);
+      g.fillTriangle(px, y, px + triW, y, px + triW / 2, y + h);
+      ci++;
+    }
+    g.lineStyle(2, 0x27272f, 0.25);
+    g.lineBetween(x, y + h, x + w, y + h);
+  }
+
+  /** Natte secko (paillasson tressé) : base + rayures + trames. */
+  static drawSeckoMat(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number): void {
+    const stripeH = h / 9;
+    g.fillStyle(0xd9b98a, 1);
+    g.fillRoundedRect(x, y, w, h, 18);
+    for (let i = 0; i < 9; i++) {
+      g.fillStyle(i % 2 === 0 ? 0xc9a56a : 0xd9b98a, 1);
+      g.fillRect(x, y + i * stripeH, w, stripeH + 1);
+    }
+    // trame : petits tirets verticaux
+    g.lineStyle(2, 0x8d6e63, 0.3);
+    for (let px = x + 10; px < x + w; px += 14) {
+      g.lineBetween(px, y + 4, px, y + h - 4);
+    }
+    g.lineStyle(4, 0x27272f, 1);
+    g.strokeRoundedRect(x, y, w, h, 18);
   }
 
   /** Texte cartoon avec contour épais. */
@@ -96,7 +136,7 @@ export class UIHelpers {
   ): Phaser.GameObjects.Text {
     return scene.add
       .text(x, y, text, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${fontSize}px`,
         color,
         fontStyle: 'bold',

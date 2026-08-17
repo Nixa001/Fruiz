@@ -43,6 +43,11 @@ export class GameOverScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 34 * k);
     panel.add(g);
 
+    // Bande tissu wax en tête de panneau (identité du jeu)
+    const band = this.add.graphics();
+    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, 20 * k);
+    panel.add(band);
+
     const title = UIHelpers.makeText(this, 0, -ph / 2 + 85 * k, 'GAME OVER', 84 * k, '#e53935');
     title.setStroke('#ffffff', 8 * k);
     panel.add(title);
@@ -70,7 +75,7 @@ export class GameOverScene extends Phaser.Scene {
     });
     const fruitName = this.add
       .text(0, -ph / 2 + 295 * k, `Meilleur fruit : ${getFruit(bestTier).name}`, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(26 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',
@@ -81,7 +86,7 @@ export class GameOverScene extends Phaser.Scene {
     // Score compté
     const scoreLabel = this.add
       .text(0, -ph / 2 + 355 * k, 'SCORE', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(24 * k)}px`,
         color: '#8d6e63',
         fontStyle: 'bold',
@@ -90,7 +95,7 @@ export class GameOverScene extends Phaser.Scene {
     panel.add(scoreLabel);
     const scoreText = this.add
       .text(0, -ph / 2 + 410 * k, '0', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(62 * k)}px`,
         color: '#c94f3d',
         fontStyle: 'bold',
@@ -109,7 +114,7 @@ export class GameOverScene extends Phaser.Scene {
     // Best + badge record (le badge remplace la ligne BEST si nouveau record)
     const bestText = this.add
       .text(0, -ph / 2 + 495 * k, `BEST  ${data.best}`, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(32 * k)}px`,
         color: '#2f8f46',
         fontStyle: 'bold',

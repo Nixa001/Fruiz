@@ -22,7 +22,7 @@ export class NextFruitUI {
 
     scene.add
       .text(x - size / 2, y + 12 * k, 'NEXT', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(16 * k)}px`,
         color: '#8d6e63',
         fontStyle: 'bold',

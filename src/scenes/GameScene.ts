@@ -597,7 +597,7 @@ export class GameScene extends Phaser.Scene {
 
     const title = this.add
       .text(cx, cy - 210 * k, 'PAUSE', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(80 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',

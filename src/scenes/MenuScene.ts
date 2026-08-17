@@ -13,6 +13,7 @@ export class MenuScene extends Phaser.Scene {
   private panel?: Phaser.GameObjects.Container;
   private closeBtn?: Phaser.GameObjects.Container;
   private mascotFace?: FaceController;
+  private escKey?: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super('Menu');
@@ -32,9 +33,18 @@ export class MenuScene extends Phaser.Scene {
     const bg = this.add.graphics().setDepth(0);
     UIHelpers.drawNotebookBackground(this, bg, k);
 
+    // Bandes tissu wax (identité sénégalaise) en haut et en bas
+    const bands = this.add.graphics().setDepth(1);
+    UIHelpers.drawWaxBand(bands, 0, 0, w, 26 * k);
+    UIHelpers.drawWaxBand(bands, 0, this.scale.height - 26 * k, w, 26 * k);
+
     this.buildDoodles();
     this.buildLogo();
     this.buildButtons();
+
+    // Échap ferme les panneaux ouverts (desktop)
+    const kb = this.input.keyboard;
+    if (kb) this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
     this.cameras.main.fadeIn(300, 245, 239, 223);
 
@@ -48,6 +58,12 @@ export class MenuScene extends Phaser.Scene {
         audioManager.playMerge(4);
       }
     });
+  }
+
+  override update(): void {
+    if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey) && this.panel) {
+      this.closePanel();
+    }
   }
 
   private buildDoodles(): void {
@@ -113,7 +129,7 @@ export class MenuScene extends Phaser.Scene {
     // Mascotte pastèque vivante
     const mascotY = 670 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
-    const img = this.add.image(0, 0, 'fruit_12').setScale(k);
+    const img = this.add.image(0, 0, 'fruit_11').setScale(k);
     mascot.add(img);
     this.mascotFace = new FaceController(this, 104, k);
     mascot.add(this.mascotFace.root);
@@ -136,6 +152,10 @@ export class MenuScene extends Phaser.Scene {
     const y0 = 900 * k;
     const gap = 128 * k;
 
+    // Natte secko derrière les boutons (le menu pose sur un paillasson tressé)
+    const mat = this.add.graphics().setDepth(2);
+    UIHelpers.drawSeckoMat(mat, w / 2 - (bw + 74 * k) / 2, y0 - 68 * k, bw + 74 * k, gap * 2 + 132 * k);
+
     const playBtn = UIHelpers.makeButton(
       this,
       { x: w / 2, y: y0, width: bw, height: bh, label: 'JOUER', fill: 0xffd54f, radius: 26 * k },
@@ -154,7 +174,7 @@ export class MenuScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
-    UIHelpers.makeButton(
+    const fruitsBtn = UIHelpers.makeButton(
       this,
       { x: w / 2, y: y0 + gap, width: bw, height: bh, label: 'FRUITS', fill: 0xa5d6a7, radius: 26 * k },
       () => {
@@ -162,7 +182,7 @@ export class MenuScene extends Phaser.Scene {
         this.openFruitsPanel();
       },
     );
-    UIHelpers.makeButton(
+    const paramsBtn = UIHelpers.makeButton(
       this,
       { x: w / 2, y: y0 + gap * 2, width: bw, height: bh, label: 'PARAMÈTRES', fill: 0xffecb3, radius: 26 * k },
       () => {
@@ -170,6 +190,19 @@ export class MenuScene extends Phaser.Scene {
         this.openSettingsPanel();
       },
     );
+
+    // Entrée en cascade des boutons
+    for (const [i, btn] of [playBtn, fruitsBtn, paramsBtn].entries()) {
+      btn.setAlpha(0).setY(btn.y + 40 * k);
+      this.tweens.add({
+        targets: btn,
+        alpha: 1,
+        y: btn.y - 40 * k,
+        delay: 150 + i * 90,
+        duration: 260,
+        ease: 'Back.easeOut',
+      });
+    }
   }
 
   // ---------- écran FRUITS ----------
@@ -200,9 +233,13 @@ export class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
     container.add(g);
 
+    const band = this.add.graphics();
+    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, 18 * k);
+    container.add(band);
+
     const title = this.add
       .text(0, -ph / 2 + 60 * k, 'LES FRUITS', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(44 * k)}px`,
         color: '#2f8f46',
         fontStyle: 'bold',
@@ -220,11 +257,16 @@ export class MenuScene extends Phaser.Scene {
       const row = Math.floor(i / cols);
       const x = -pw / 2 + cellW * (col + 0.5);
       const y = -ph / 2 + 130 * k + cellH * (row + 0.5);
+      // Pastille teintée de la couleur du fruit
+      const chip = this.add.graphics();
+      chip.fillStyle(def.color, 0.3);
+      chip.fillRoundedRect(x - cellW * 0.3, y - 34 * k - cellW * 0.3, cellW * 0.6, cellW * 0.6, 14 * k);
+      container.add(chip);
       const img = this.add.image(x, y - 34 * k, `fruit_${def.id}`).setScale(k * 0.38);
       container.add(img);
       const name = this.add
         .text(x, y + 26 * k, def.name, {
-          fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
           fontSize: `${Math.round(20 * k)}px`,
           color: '#27272f',
           fontStyle: 'bold',
@@ -233,7 +275,7 @@ export class MenuScene extends Phaser.Scene {
       container.add(name);
       const pts = this.add
         .text(x, y + 50 * k, `+${def.score}`, {
-          fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
           fontSize: `${Math.round(17 * k)}px`,
           color: '#8d6e63',
           fontStyle: 'bold',
@@ -291,9 +333,13 @@ export class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
     container.add(g);
 
+    const band = this.add.graphics();
+    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, 18 * k);
+    container.add(band);
+
     const title = this.add
       .text(0, -ph / 2 + 60 * k, 'PARAMÈTRES', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(42 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',
@@ -350,7 +396,7 @@ export class MenuScene extends Phaser.Scene {
 
     const labelText = this.add
       .text(-180 * k, y, label, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(34 * k)}px`,
         color: '#27272f',
         fontStyle: 'bold',

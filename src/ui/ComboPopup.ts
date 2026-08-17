@@ -27,7 +27,7 @@ export class ComboPopup {
     this.container?.destroy();
     const text = this.scene.add
       .text(0, 0, `COMBO ×${combo}`, {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(46 * k * (1 + combo * 0.06))}px`,
         color,
         fontStyle: 'bold',

@@ -1,4 +1,4 @@
-# MERGE FRUITS SÉNÉGAL 🍉
+# MERGE FRUIZ 🍉
 
 Jeu mobile casual de fusion de fruits (style Watermelon Game), avec des fruits-personnages
 expressifs inspirés de l'esprit de Ball Guys, et une identité sénégalaise :
@@ -42,7 +42,7 @@ Nécessite Google Chrome installé dans `/Applications`.
 ```bash
 npm run build
 npm install @capacitor/core @capacitor/cli
-npx cap init "Merge Fruits Sénégal" sn.merge.fruits --web-dir=dist
+npx cap init "Merge Fruiz" sn.merge.fruits --web-dir=dist
 npx cap add android
 npx cap add ios
 npx cap open android

@@ -19,7 +19,7 @@ export class DangerLine {
     this.g = scene.add.graphics().setDepth(8);
     this.label = scene.add
       .text((x1 + x2) / 2, y - 24 * (scene.scale.height / 1280), '⚠ DANGER', {
-        fontFamily: '"Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
         fontSize: `${Math.round(20 * (scene.scale.height / 1280))}px`,
         color: '#c94f3d',
         fontStyle: 'bold',

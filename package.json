@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "MERGE FRUITS SÉNÉGAL — jeu mobile casual de fusion de fruits (Phaser 3 + TypeScript + Vite + Matter)",
+  "description": "MERGE FRUIZ — jeu mobile casual de fusion de fruits (Phaser 3 + TypeScript + Vite + Matter)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
