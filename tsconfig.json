@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+    "types": ["vite/client"],
     "noEmit": true
   },
   "include": ["src"]

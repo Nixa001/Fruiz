@@ -22,6 +22,9 @@ export class GameOverScene extends Phaser.Scene {
     const cy = h / 2 - 110 * k;
     const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
 
+    audioManager.attachScene(this);
+    if (audioManager.musicEnabled) audioManager.startMusic();
+
     const bg = this.add.graphics().setDepth(0);
     UIHelpers.drawNotebookBackground(this, bg, k);
 

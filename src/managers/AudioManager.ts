@@ -1,10 +1,10 @@
+import Phaser from 'phaser';
 import { SaveManager } from './SaveManager';
 
 /**
- * Audio 100% synthétisé (WebAudio), travaillé pour être vivant :
- * accords, arpèges, vibratos, petits bruits de texture.
- * Les vrais fichiers audio pourront remplacer ces sons plus tard
- * sans modifier le gameplay (l'interface des méthodes reste stable).
+ * SFX 100% synthétisés (WebAudio). La musique de fond peut venir d'un
+ * fichier externe (bgm_*.mp3 chargé par PreloadScene) ou retomber sur
+ * la boucle kalimba synthétique si le fichier est absent.
  */
 export class AudioManager {
   soundEnabled: boolean;
@@ -13,16 +13,24 @@ export class AudioManager {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private musicTimer: ReturnType<typeof setInterval> | null = null;
+  private scene: Phaser.Scene | null = null;
+  private music: Phaser.Sound.BaseSound | null = null;
 
   constructor() {
     this.soundEnabled = SaveManager.isSoundEnabled();
     this.musicEnabled = SaveManager.isMusicEnabled();
   }
 
+  /** Scène active qui porte le gestionnaire de sons (musique en fichier). */
+  attachScene(scene: Phaser.Scene): void {
+    this.scene = scene;
+  }
+
   /** À appeler après un geste utilisateur (débloque l'audio mobile). */
   unlock(): void {
     this.ensureCtx();
     this.ctx?.resume().catch(() => undefined);
+    this.scene?.sound.unlock();
   }
 
   setSoundEnabled(enabled: boolean): void {
@@ -112,9 +120,34 @@ export class AudioManager {
 
   // ---------- musique ----------
 
-  /** Boucle kalimba douce : mélodie pentatonique + basse. */
+  /** Musique de fond : fichier mp3 (boucle) si dispo, sinon kalimba synthétique. */
   startMusic(): void {
-    if (!this.musicEnabled || this.musicTimer) return;
+    if (!this.musicEnabled) return;
+    // Fichier externe : le son appartient à la scène active, relancé si détruit
+    if (this.scene && this.scene.cache.audio.exists('Baobab_Morning')) {
+      const key = 'Baobab_Morning';
+      const existing = this.scene.sound.get(key);
+      if (existing && existing.isPlaying) {
+        this.music = existing;
+        return;
+      }
+      this.stopSynthMusic();
+      this.music = this.scene.sound.add(key, { loop: true, volume: 0.35 });
+      this.music.play();
+      return;
+    }
+    this.startSynthMusic();
+  }
+
+  stopMusic(): void {
+    this.stopSynthMusic();
+    this.music?.stop();
+    this.music = null;
+  }
+
+  /** Boucle kalimba douce : mélodie pentatonique + basse (fallback sans fichier). */
+  private startSynthMusic(): void {
+    if (this.musicTimer) return;
     this.ensureCtx();
     if (!this.ctx) return;
     const scale = [262, 294, 330, 392, 440, 523, 587, 659];
@@ -142,7 +175,7 @@ export class AudioManager {
     }, 420);
   }
 
-  stopMusic(): void {
+  private stopSynthMusic(): void {
     if (this.musicTimer) {
       clearInterval(this.musicTimer);
       this.musicTimer = null;

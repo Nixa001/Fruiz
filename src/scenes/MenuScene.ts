@@ -25,6 +25,9 @@ export class MenuScene extends Phaser.Scene {
     const k = this.k;
     const w = this.scale.width;
 
+    // Musique de fond portée par cette scène
+    audioManager.attachScene(this);
+
     // Déblocage audio au premier geste (mobile)
     this.input.once('pointerdown', () => {
       audioManager.unlock();

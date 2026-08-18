@@ -125,7 +125,9 @@ export class GameScene extends Phaser.Scene {
     );
 
     // Débloque l'audio au premier geste (exigence navigateurs mobiles)
+    audioManager.attachScene(this);
     this.input.once('pointerdown', () => audioManager.unlock());
+    if (audioManager.musicEnabled) audioManager.startMusic();
 
     // Bouton pause (haut centre) + overlay REPRENDRE / MENU
     this.buildPauseButton();

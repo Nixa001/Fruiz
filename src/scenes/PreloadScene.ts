@@ -1,13 +1,26 @@
 import Phaser from 'phaser';
 import { FruitRenderer } from '../entities/FruitRenderer';
 
+// Musique externe optionnelle : la boucle kalimba synthétique prend le relais sinon
+const audioAssets = import.meta.glob('../assets/audio/*.mp3', {
+  eager: true,
+  import: 'default',
+}) as Record<string, string>;
+
 /**
- * Génère toutes les textures procédurales (fruits, particules).
- * Aucun asset externe : le jeu démarre immédiatement.
+ * Charge la musique, puis génère les textures procédurales (fruits, particules).
+ * Aucun asset externe requis : le jeu démarre immédiatement.
  */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super('Preload');
+  }
+
+  preload(): void {
+    for (const [path, url] of Object.entries(audioAssets)) {
+      const m = path.match(/\/([^/]+)\.mp3$/);
+      if (m) this.load.audio(m[1], url);
+    }
   }
 
   create(): void {

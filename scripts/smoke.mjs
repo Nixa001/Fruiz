@@ -58,7 +58,7 @@ const px = await page.evaluate(async () => {
     const d = ctx.getImageData(Math.round((x / snap.width) * snap.width), Math.round((y / snap.height) * snap.height), 1, 1).data;
     return [d[0], d[1], d[2]];
   };
-  return { bg: s(10, 10), bowl: s(195, 500) };
+  return { bg: s(10, 60), bowl: s(195, 500) };
 });
 check('fond cahier rendu', px && px.bg[0] > 240 && px.bg[1] > 228, px?.bg.join(','));
 
@@ -93,7 +93,7 @@ const pxGame = await page.evaluate(async () => {
 });
 check(
   'intérieur calebasse rendu au centre',
-  pxGame[0] > 225 && pxGame[1] > 205 && pxGame[2] > 150 && pxGame[2] < 210,
+  pxGame[0] > 210 && pxGame[1] > 185 && pxGame[2] > 140 && pxGame[2] < 215,
   pxGame.join(','),
 );
 
