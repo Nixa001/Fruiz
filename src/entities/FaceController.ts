@@ -121,8 +121,8 @@ export class FaceController {
     if (this.expression === expr) return;
     this.expression = expr;
     const spec = EXPRESSIONS[expr];
-    this.drawEye(this.whiteL, this.pupilL, this.specialL, spec, -1);
-    this.drawEye(this.whiteR, this.pupilR, this.specialR, spec, 1);
+    this.drawEye(this.whiteL, this.pupilL, this.specialL, spec);
+    this.drawEye(this.whiteR, this.pupilR, this.specialR, spec);
     this.drawBrows(spec);
     this.drawMouth(spec);
   }
@@ -169,7 +169,6 @@ export class FaceController {
     pupil: Phaser.GameObjects.Graphics,
     special: Phaser.GameObjects.Graphics,
     spec: ExpressionSpec,
-    side: number,
   ): void {
     // Les graphics sont enfants du conteneur œil déjà positionné à (ex, ey) :
     // tout se dessine en relatif, sinon les yeux se retrouvent décalés sur le côté
