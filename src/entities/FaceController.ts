@@ -18,15 +18,15 @@ interface ExpressionSpec {
 }
 
 const EXPRESSIONS: Record<FruitExpression, ExpressionSpec> = {
-  [FruitExpression.IDLE]: { eyeW: 0.3, eyeH: 0.4, pupilR: 0.1, mouth: 'smile', mouthR: 0.2, special: 'none', angryBrows: false, mouthY: 0.32 },
-  [FruitExpression.HAPPY]: { eyeW: 0.27, eyeH: 0.36, pupilR: 0.1, mouth: 'smile', mouthR: 0.26, special: 'none', angryBrows: false, mouthY: 0.34 },
-  [FruitExpression.EXCITED]: { eyeW: 0.34, eyeH: 0.46, pupilR: 0.12, mouth: 'openSmile', mouthR: 0.24, special: 'none', angryBrows: false, mouthY: 0.36 },
-  [FruitExpression.SURPRISED]: { eyeW: 0.36, eyeH: 0.46, pupilR: 0.055, mouth: 'o', mouthR: 0.13, special: 'none', angryBrows: false, mouthY: 0.38 },
-  [FruitExpression.CONFUSED]: { eyeW: 0.3, eyeH: 0.4, pupilR: 0.09, mouth: 'wavy', mouthR: 0.22, special: 'none', angryBrows: false, mouthY: 0.36 },
-  [FruitExpression.ANGRY]: { eyeW: 0.27, eyeH: 0.32, pupilR: 0.085, mouth: 'frown', mouthR: 0.22, special: 'none', angryBrows: true, mouthY: 0.42 },
-  [FruitExpression.SCARED]: { eyeW: 0.38, eyeH: 0.46, pupilR: 0.05, mouth: 'wavy', mouthR: 0.26, special: 'none', angryBrows: false, mouthY: 0.42 },
+  [FruitExpression.IDLE]: { eyeW: 0.44, eyeH: 0.56, pupilR: 0.14, mouth: 'smile', mouthR: 0.2, special: 'none', angryBrows: false, mouthY: 0.32 },
+  [FruitExpression.HAPPY]: { eyeW: 0.38, eyeH: 0.5, pupilR: 0.14, mouth: 'smile', mouthR: 0.26, special: 'none', angryBrows: false, mouthY: 0.34 },
+  [FruitExpression.EXCITED]: { eyeW: 0.48, eyeH: 0.6, pupilR: 0.16, mouth: 'openSmile', mouthR: 0.24, special: 'none', angryBrows: false, mouthY: 0.36 },
+  [FruitExpression.SURPRISED]: { eyeW: 0.5, eyeH: 0.6, pupilR: 0.08, mouth: 'o', mouthR: 0.13, special: 'none', angryBrows: false, mouthY: 0.38 },
+  [FruitExpression.CONFUSED]: { eyeW: 0.44, eyeH: 0.56, pupilR: 0.13, mouth: 'wavy', mouthR: 0.22, special: 'none', angryBrows: false, mouthY: 0.36 },
+  [FruitExpression.ANGRY]: { eyeW: 0.38, eyeH: 0.44, pupilR: 0.12, mouth: 'frown', mouthR: 0.22, special: 'none', angryBrows: true, mouthY: 0.42 },
+  [FruitExpression.SCARED]: { eyeW: 0.52, eyeH: 0.6, pupilR: 0.075, mouth: 'wavy', mouthR: 0.26, special: 'none', angryBrows: false, mouthY: 0.42 },
   [FruitExpression.MERGING]: { eyeW: 0, eyeH: 0, pupilR: 0, mouth: 'grin', mouthR: 0.3, special: 'squeezed', angryBrows: false, mouthY: 0.34 },
-  [FruitExpression.CELEBRATING]: { eyeW: 0.36, eyeH: 0.46, pupilR: 0.13, mouth: 'openSmile', mouthR: 0.3, special: 'none', angryBrows: false, mouthY: 0.36 },
+  [FruitExpression.CELEBRATING]: { eyeW: 0.5, eyeH: 0.6, pupilR: 0.17, mouth: 'openSmile', mouthR: 0.3, special: 'none', angryBrows: false, mouthY: 0.36 },
   [FruitExpression.GAME_OVER]: { eyeW: 0, eyeH: 0, pupilR: 0, mouth: 'frown', mouthR: 0.24, special: 'cross', angryBrows: false, mouthY: 0.44 },
 };
 
@@ -93,7 +93,7 @@ export class FaceController {
     const cheeks = scene.add.graphics();
     cheeks.fillStyle(0xe57373, 0.28);
     for (const sx of [-1, 1]) {
-      cheeks.fillEllipse(sx * 0.46 * r, 0.16 * r, 0.13 * r, 0.09 * r);
+      cheeks.fillEllipse(sx * 0.52 * r, 0.2 * r, 0.13 * r, 0.09 * r);
     }
     this.root.add(cheeks);
 
@@ -171,8 +171,8 @@ export class FaceController {
     spec: ExpressionSpec,
     side: number,
   ): void {
-    const ex = side * EYE_SPACING * this.r;
-    const ey = EYE_Y * this.r;
+    // Les graphics sont enfants du conteneur œil déjà positionné à (ex, ey) :
+    // tout se dessine en relatif, sinon les yeux se retrouvent décalés sur le côté
     white.clear();
     pupil.clear();
     special.clear();
@@ -181,7 +181,7 @@ export class FaceController {
       // Yeux écrasés : ^ ^
       special.lineStyle(this.r * 0.07, DARK, 1);
       special.beginPath();
-      special.arc(ex, ey + this.r * 0.04, this.r * 0.16, Math.PI * 1.15, Math.PI * 1.85);
+      special.arc(0, this.r * 0.04, this.r * 0.16, Math.PI * 1.15, Math.PI * 1.85);
       special.strokePath();
       return;
     }
@@ -189,17 +189,17 @@ export class FaceController {
       // Yeux en croix
       special.lineStyle(this.r * 0.06, DARK, 1);
       const c = this.r * 0.13;
-      special.lineBetween(ex - c, ey - c, ex + c, ey + c);
-      special.lineBetween(ex - c, ey + c, ex + c, ey - c);
+      special.lineBetween(-c, -c, c, c);
+      special.lineBetween(-c, c, c, -c);
       return;
     }
 
     const w = spec.eyeW * this.r;
     const h = spec.eyeH * this.r;
     white.fillStyle(0xffffff, 1);
-    white.fillEllipse(ex, ey, w, h);
+    white.fillEllipse(0, 0, w, h);
     white.lineStyle(Math.max(this.r * 0.045, 2), DARK, 1);
-    white.strokeEllipse(ex, ey, w, h);
+    white.strokeEllipse(0, 0, w, h);
 
     const pr = spec.pupilR * this.r;
     // Pupille noire pleine : pas de point blanc (il se confondait avec un œil)

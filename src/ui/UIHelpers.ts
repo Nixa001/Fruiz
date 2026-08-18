@@ -173,9 +173,12 @@ export class UIHelpers {
    */
   static drawWaxBand(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number): void {
     const colors = [0x2d4a8e, 0xffc53d, 0xc94f3d, 0x2f9e44];
-    const triW = h * 2;
+    // Triangles tous égaux : bande découpée en parts entières (pas de débordement)
+    const count = Math.max(1, Math.ceil(w / (h * 2)));
+    const triW = w / count;
     let ci = 0;
-    for (let px = x; px < x + w; px += triW) {
+    for (let i = 0; i < count; i++) {
+      const px = x + i * triW;
       g.fillStyle(colors[ci % colors.length], 1);
       g.fillTriangle(px, y, px + triW, y, px + triW / 2, y + h);
       ci++;

@@ -64,7 +64,7 @@ check('fond cahier rendu', px && px.bg[0] > 240 && px.bg[1] > 228, px?.bg.join('
 
 // --- Navigation vers le jeu ---
 const k = 844 / 1280;
-await page.touchscreen.tap(195, 900 * k);
+await page.touchscreen.tap(195, 636);
 await new Promise((r) => setTimeout(r, 1800));
 state = await page.evaluate(() => {
   const game = window.__game;
@@ -257,8 +257,8 @@ const bestSaved = await page.evaluate(() => window.localStorage.getItem('merge_f
 check('best score persisté (localStorage)', bestSaved !== null && parseInt(bestSaved, 10) === 220, `best=${bestSaved}`);
 
 // --- Interface : REJOUER → Game, MENU → panneaux ---
-// REJOUER (bouton sous le panneau GameOver)
-await page.touchscreen.tap(195, 649);
+// REJOUER (gros bouton sous le panneau GameOver, 390x844)
+await page.touchscreen.tap(195, 447);
 await new Promise((r) => setTimeout(r, 1500));
 const replayState = await page.evaluate(() => {
   const gs = window.__game.scene.getScene('Game');
@@ -274,18 +274,18 @@ check('carte NEXT synchronisée', replayState.nextShown === true);
 await page.evaluate(() => window.__game.scene.getScene('Game').scene.start('Menu'));
 await new Promise((r) => setTimeout(r, 1200));
 
-// FRUITS panel (bouton FRUITS à 677)
-await page.touchscreen.tap(195, 677);
-await new Promise((r) => setTimeout(r, 600));
+// FRUITS panel (bouton FRUITS à (124, 710) sur 390x844)
+await page.touchscreen.tap(124, 710);
+await new Promise((r) => setTimeout(r, 800));
 const fruitsPanel = await page.evaluate(() => window.__game.scene.getScene('Menu').panel !== undefined);
 check('panneau FRUITS ouvert', fruitsPanel === true);
-await page.touchscreen.tap(195, 788);
+await page.touchscreen.tap(195, 797);
 await new Promise((r) => setTimeout(r, 600));
 const fruitsClosed = await page.evaluate(() => window.__game.scene.getScene('Menu').panel === undefined);
 check('panneau FRUITS fermé', fruitsClosed === true);
 
-// PARAMÈTRES (bouton à 762) : toggle SON
-await page.touchscreen.tap(195, 762);
+// PARAMÈTRES (bouton à (266, 710) sur 390x844) : toggle SON
+await page.touchscreen.tap(266, 710);
 await new Promise((r) => setTimeout(r, 600));
 await page.touchscreen.tap(195, 323);
 await new Promise((r) => setTimeout(r, 300));
@@ -298,8 +298,8 @@ check('toggle SON persisté (on)', soundOn === '1', `sound=${soundOn}`);
 await page.touchscreen.tap(195, 679);
 await new Promise((r) => setTimeout(r, 600));
 
-// JOUER depuis le menu (bouton à 593)
-await page.touchscreen.tap(195, 593);
+// JOUER depuis le menu (bouton à 636 sur 390x844)
+await page.touchscreen.tap(195, 636);
 await new Promise((r) => setTimeout(r, 1200));
 const backInGame = await page.evaluate(() => ({
   active: window.__game.scene.getScenes(true).map((s) => s.scene.key),

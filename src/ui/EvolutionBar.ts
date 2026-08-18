@@ -21,9 +21,14 @@ export class EvolutionBar {
       const x = margin + slot * (i + 0.5);
       // Taille croissante le long de l'évolution (plafonnée à la cellule)
       const scale = Math.min(0.32 * k, (slot * 0.9) / (def.radius * 2));
-      const img = scene.add.image(x, y, `fruit_${def.id}`).setScale(scale).setDepth(8);
+      // Fruits posés sur la même ligne : le bas repose sur la baseline
+      const img = scene.add.image(x, y - def.radius * scale, `fruit_${def.id}`).setScale(scale).setDepth(8);
       this.sprites.push(img);
     }
+    // Ligne de sol discrète sous les fruits
+    const line = scene.add.graphics().setDepth(7);
+    line.lineStyle(3 * k, 0x27272f, 0.25);
+    line.lineBetween(margin, y + 4 * k, w - margin, y + 4 * k);
     this.lastTier = 0;
   }
 

@@ -558,9 +558,10 @@ export class GameScene extends Phaser.Scene {
         width: 92 * k,
         height: 92 * k,
         label: '❚❚',
-        fill: 0xffecb3,
+        fill: 0xffd54f,
         radius: 22 * k,
         depth: 25,
+        shadowColor: 0xc94f3d,
         fontSize: Math.round(36 * k),
       },
       () => {
@@ -607,51 +608,75 @@ export class GameScene extends Phaser.Scene {
     const dim = this.add.rectangle(cx, cy, w, h, 0x27272f, 0.5).setInteractive();
     overlay.add(dim);
 
+    // Panneau crème avec ombre indigo
+    const pw = 480 * k;
+    const ph = 600 * k;
     const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.2);
-    g.fillRoundedRect(cx - 240 * k + 6 * k, cy - 300 * k + 8 * k, 480 * k, 600 * k, 30 * k);
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(cx - pw / 2 + 7 * k, cy - ph / 2 + 7 * k, pw, ph, 30 * k);
     g.fillStyle(0xfff9ec, 1);
-    g.fillRoundedRect(cx - 240 * k, cy - 300 * k, 480 * k, 600 * k, 30 * k);
+    g.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 30 * k);
     g.lineStyle(6 * k, 0x27272f, 1);
-    g.strokeRoundedRect(cx - 240 * k, cy - 300 * k, 480 * k, 600 * k, 30 * k);
+    g.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 30 * k);
     overlay.add(g);
 
+    // Bandeau wax en tête avec PAUSE
+    const headH = 96 * k;
+    const head = this.add.graphics();
+    head.fillStyle(0xf7be36, 1);
+    head.fillRect(cx - pw / 2, cy - ph / 2, pw, headH);
+    UIHelpers.drawWaxBand(head, cx - pw / 2, cy - ph / 2, pw, headH);
+    head.lineStyle(4 * k, 0x27272f, 1);
+    head.lineBetween(cx - pw / 2, cy - ph / 2 + headH, cx + pw / 2, cy - ph / 2 + headH);
+    overlay.add(head);
+    const titleY = cy - ph / 2 + headH / 2;
+    const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
+    overlay.add(
+      this.add
+        .text(cx + 4 * k, titleY + 4 * k, 'PAUSE', {
+          fontFamily: FONT,
+          fontSize: `${Math.round(64 * k)}px`,
+          color: '#c94f3d',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5),
+    );
     const title = this.add
-      .text(cx, cy - 210 * k, 'PAUSE', {
-        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(72 * k)}px`,
-        color: '#27272f',
+      .text(cx, titleY, 'PAUSE', {
+        fontFamily: FONT,
+        fontSize: `${Math.round(64 * k)}px`,
+        color: '#ffffff',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setStroke('#ffffff', 7 * k);
+      .setStroke('#27272f', 6 * k);
     overlay.add(title);
-    // trait sous le titre
+    // trait sous le bandeau
     const rule = this.add.graphics();
-    rule.lineStyle(4 * k, 0x27272f, 1);
-    rule.lineBetween(cx - 180 * k, cy - 168 * k, cx + 180 * k, cy - 168 * k);
+    rule.lineStyle(4 * k, 0x27272f, 0.35);
+    rule.lineBetween(cx - 180 * k, cy - 150 * k, cx + 180 * k, cy - 150 * k);
     overlay.add(rule);
 
     this.pauseOverlay = overlay;
     overlay.setScale(0.6).setAlpha(0);
-    this.tweens.add({ targets: overlay, scale: 1, alpha: 1, duration: 180, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: overlay, scale: 1, alpha: 1, duration: 240, ease: 'Back.easeOut' });
 
-    // Boutons (absolus : input fiable sur mobile)
-    const bw = Math.min(300 * k, w * 0.65);
-    const bh = 88 * k;
+    // Boutons (absolus : input fiable sur mobile) — couleurs wax vives
+    const bw = Math.min(380 * k, w * 0.78);
+    const bh = 96 * k;
     this.pauseResumeBtn = UIHelpers.makeButton(
       this,
       {
         x: cx,
-        y: cy - 92 * k,
+        y: cy - 96 * k,
         width: bw,
         height: bh,
         label: 'REPRENDRE',
-        fill: 0x5772b9,
+        fill: 0x2f9e44,
         textColor: '#ffffff',
-        radius: 22 * k,
+        radius: 24 * k,
         depth: 85,
-        shadowColor: 0x27272f,
+        shadowColor: 0x1b5e20,
         icon: 'play',
         iconPosition: 'left',
       },
@@ -664,15 +689,15 @@ export class GameScene extends Phaser.Scene {
       this,
       {
         x: cx,
-        y: cy + 8 * k,
+        y: cy + 14 * k,
         width: bw,
         height: bh,
         label: 'RECOMMENCER',
-        fill: 0xa5d6a7,
-        radius: 22 * k,
+        fill: 0xffc53d,
+        radius: 24 * k,
         depth: 85,
-        shadowColor: 0x27272f,
-        fontSize: Math.round(bh * 0.34),
+        shadowColor: 0xc94f3d,
+        fontSize: Math.round(bh * 0.3),
       },
       () => {
         audioManager.playButton();
@@ -690,14 +715,16 @@ export class GameScene extends Phaser.Scene {
       this,
       {
         x: cx,
-        y: cy + 108 * k,
+        y: cy + 124 * k,
         width: bw,
         height: bh,
         label: 'MENU',
-        fill: 0xe0e3e8,
-        radius: 22 * k,
+        fill: 0xc94f3d,
+        textColor: '#ffffff',
+        radius: 24 * k,
         depth: 85,
-        shadowColor: 0x27272f,
+        shadowColor: 0x3d599e,
+        fontSize: Math.round(bh * 0.32),
       },
       () => {
         audioManager.playButton();
@@ -707,6 +734,19 @@ export class GameScene extends Phaser.Scene {
         this.scene.start('Menu');
       },
     );
+
+    // Entrée en cascade des boutons
+    for (const [i, btn] of [this.pauseResumeBtn, this.pauseRestartBtn, this.pauseMenuBtn].entries()) {
+      btn.setAlpha(0).setY(btn.y + 50 * k);
+      this.tweens.add({
+        targets: btn,
+        alpha: 1,
+        y: btn.y - 50 * k,
+        delay: 100 + i * 90,
+        duration: 300,
+        ease: 'Back.easeOut',
+      });
+    }
   }
 
   // ---------- fin de partie ----------

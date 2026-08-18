@@ -274,11 +274,12 @@ export class MenuScene extends Phaser.Scene {
 
     const container = this.add.container(cx, cy).setDepth(50);
     this.panel = container;
-    container.setScale(0.6);
-    this.tweens.add({ targets: container, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    container.setScale(0.25).setAlpha(0);
+    this.tweens.add({ targets: container, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut' });
 
-    const dim = this.add.rectangle(0, 0, w, h, 0x27272f, 0.45).setInteractive();
+    const dim = this.add.rectangle(0, 0, w, h, 0x27272f, 0).setInteractive();
     dim.on('pointerdown', () => this.closePanel());
+    this.tweens.add({ targets: dim, fillAlpha: 0.45, duration: 250, ease: 'Sine.easeOut' });
     container.add(dim);
 
     const g = this.add.graphics();
@@ -290,22 +291,43 @@ export class MenuScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
     container.add(g);
 
-    // En-tête : Collection + compteur n/11 + trait
+    // En-tête : bandeau wax + Collection + compteur n/11
     const unlockedTier = SaveManager.getUnlockedTier();
     const unlockedCount = FRUITS.filter((f) => f.id <= unlockedTier).length;
+    const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
+    const bandH = 90 * k;
+    const band = this.add.graphics();
+    band.fillStyle(0xf7be36, 1);
+    band.fillRect(-pw / 2, -ph / 2, pw, bandH);
+    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, bandH);
+    band.lineStyle(4 * k, 0x27272f, 1);
+    band.lineBetween(-pw / 2, -ph / 2 + bandH, pw / 2, -ph / 2 + bandH);
+    container.add(band);
+    const bandY = -ph / 2 + bandH / 2;
+    const leafIco = this.add.graphics();
+    UIHelpers.drawIcon(leafIco, -pw / 2 + 60 * k, bandY, 24 * k, 'leaf');
+    container.add(leafIco);
+    container.add(
+      this.add
+        .text(4 * k, bandY + 4 * k, 'Collection', {
+          fontFamily: FONT,
+          fontSize: `${Math.round(42 * k)}px`,
+          color: '#c94f3d',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5),
+    );
     const title = this.add
-      .text(-20 * k, -ph / 2 + 55 * k, 'Collection', {
-        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(40 * k)}px`,
-        color: '#27272f',
+      .text(0, bandY, 'Collection', {
+        fontFamily: FONT,
+        fontSize: `${Math.round(42 * k)}px`,
+        color: '#ffffff',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setStroke('#27272f', 5 * k);
     container.add(title);
-    const leafIco = this.add.graphics();
-    UIHelpers.drawIcon(leafIco, -pw / 2 + 60 * k, -ph / 2 + 55 * k, 22 * k, 'leaf');
-    container.add(leafIco);
-    const badge = this.add.container(pw / 2 - 80 * k, -ph / 2 + 55 * k);
+    const badge = this.add.container(pw / 2 - 80 * k, bandY);
     const bgBadge = this.add.graphics();
     bgBadge.fillStyle(0xc94f3d, 1);
     bgBadge.fillRoundedRect(-50 * k, -22 * k, 100 * k, 44 * k, 22 * k);
@@ -315,7 +337,7 @@ export class MenuScene extends Phaser.Scene {
     badge.add(
       this.add
         .text(0, 0, `${unlockedCount}/${FRUITS.length}`, {
-          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+          fontFamily: FONT,
           fontSize: `${Math.round(24 * k)}px`,
           color: '#ffffff',
           fontStyle: 'bold',
@@ -323,10 +345,8 @@ export class MenuScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
     container.add(badge);
-    const rule = this.add.graphics();
-    rule.lineStyle(4 * k, 0x27272f, 1);
-    rule.lineBetween(-pw / 2 + 20 * k, -ph / 2 + 100 * k, pw / 2 - 20 * k, -ph / 2 + 100 * k);
-    container.add(rule);
+    badge.setScale(0);
+    this.tweens.add({ targets: badge, scale: 1, delay: 250, duration: 300, ease: 'Back.easeOut' });
 
     // Grille 3x4 de cellules rondes
     const cols = 3;
@@ -338,38 +358,47 @@ export class MenuScene extends Phaser.Scene {
       const row = Math.floor(i / cols);
       const x = -pw / 2 + cellW * (col + 0.5);
       const y = -ph / 2 + 135 * k + cellH * (row + 0.5) - 14 * k;
-      const d = cellW * 0.6;
+      const d = cellW * 0.62;
       const unlocked = def.id <= unlockedTier;
+      const cellC = this.add.container(x, y);
       const cell = this.add.graphics();
-      if (unlocked) {
-        cell.fillStyle(0x27272f, 1);
-        cell.fillCircle(x + 3 * k, y + 3 * k, d / 2);
-        cell.fillStyle(def.color, 0.35);
-        cell.fillCircle(x, y, d / 2);
-      } else {
-        cell.fillStyle(0xe0e3e8, 1);
-        cell.fillCircle(x, y, d / 2);
-      }
+      // Ombre portée + pastille couleur du fruit + cœur blanc qui fait ressortir le fruit
+      cell.fillStyle(0x27272f, 1);
+      cell.fillCircle(3 * k, 3 * k, d / 2);
+      cell.fillStyle(unlocked ? def.color : 0xe0e3e8, unlocked ? 0.38 : 1);
+      cell.fillCircle(0, 0, d / 2);
+      cell.fillStyle(0xffffff, 0.92);
+      cell.fillCircle(0, 0, d * 0.42);
       cell.lineStyle(4 * k, 0x27272f, 1);
-      cell.strokeCircle(x, y, d / 2);
-      container.add(cell);
+      cell.strokeCircle(0, 0, d / 2);
+      cellC.add(cell);
       if (unlocked) {
-        const img = this.add.image(x, y, `fruit_${def.id}`).setScale(k * 0.3);
-        container.add(img);
+        // Fruit agrandi : taille cible commune calée sur la cellule
+        const fscale = (d * 0.74) / (def.radius * 2);
+        cellC.add(this.add.image(0, 0, `fruit_${def.id}`).setScale(fscale));
       } else {
+        const inner = this.add.graphics();
+        inner.lineStyle(2 * k, 0x27272f, 0.22);
+        inner.strokeCircle(0, 0, d * 0.42);
+        cellC.add(inner);
         const lock = this.add.graphics();
-        UIHelpers.drawIcon(lock, x, y, d * 0.22, 'lock');
-        container.add(lock);
+        UIHelpers.drawIcon(lock, 0, 0, d * 0.26, 'lock');
+        cellC.add(lock);
       }
-      const name = this.add
-        .text(x, y + d / 2 + 24 * k, def.name, {
-          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-          fontSize: `${Math.round(19 * k)}px`,
-          color: unlocked ? '#27272f' : '#8b716d',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
-      container.add(name);
+      cellC.add(
+        this.add
+          .text(0, d / 2 + 24 * k, def.name, {
+            fontFamily: FONT,
+            fontSize: `${Math.round(19 * k)}px`,
+            color: unlocked ? '#27272f' : '#8b716d',
+            fontStyle: 'bold',
+          })
+          .setOrigin(0.5),
+      );
+      container.add(cellC);
+      // Pop en cascade des cellules
+      cellC.setScale(0);
+      this.tweens.add({ targets: cellC, scale: 1, delay: 200 + i * 45, duration: 280, ease: 'Back.easeOut' });
     });
 
     // Bouton fermer (détruit à la fermeture pour ne pas bloquer les clics)
@@ -384,6 +413,7 @@ export class MenuScene extends Phaser.Scene {
         fill: 0xffd54f,
         radius: 20 * k,
         depth: 55,
+        shadowColor: 0xc94f3d,
         fontSize: Math.round(30 * k),
       },
       () => {
@@ -391,6 +421,16 @@ export class MenuScene extends Phaser.Scene {
         this.closePanel();
       },
     );
+    // Le bouton arrive juste après la grille
+    this.closeBtn.setAlpha(0).setY(this.closeBtn.y + 50 * k);
+    this.tweens.add({
+      targets: this.closeBtn,
+      alpha: 1,
+      y: this.closeBtn.y - 50 * k,
+      delay: 240,
+      duration: 260,
+      ease: 'Back.easeOut',
+    });
   }
 
   // ---------- écran PARAMÈTRES ----------
