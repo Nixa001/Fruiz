@@ -112,7 +112,6 @@ export class FruitRenderer {
         FruitRenderer.drawCircleBase(ctx, def, r);
         FruitRenderer.drawSurfaceDetails(ctx, def, r);
         if (def.id === 4) FruitRenderer.drawGoyaveNubs(ctx, r); // Goyave
-        if (def.id === 8) FruitRenderer.drawCocoFiber(ctx, def, r); // Coco
     }
   }
 
@@ -179,18 +178,20 @@ export class FruitRenderer {
     ctx.stroke();
   }
 
-  /** Petits détails de surface par fruit (discrets, pas de blancs). */
+  /** Détails de surface par fruit, calqués sur l'aspect réel (discrets). */
   private static drawSurfaceDetails(ctx: CanvasRenderingContext2D, def: FruitDefinition, r: number): void {
     ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.28);
     switch (def.id) {
-      case 1: // Gigibier : petites mouchetures
+      case 1: // Gigibier (jujube) : mouchetures + reflet brillant
         for (const [sx, sy] of [[-0.35, -0.15], [0.3, 0.1], [-0.15, 0.35], [0.45, -0.3], [0.05, -0.5]] as [number, number][]) {
           ctx.beginPath();
           ctx.arc(sx * r, sy * r, r * 0.04, 0, Math.PI * 2);
           ctx.fill();
         }
+        FruitRenderer.drawSpecular(ctx, r, 0.4);
         break;
-      case 2: // Soump : reflet latéral
+      case 2: // Soump : pruine poudreuse (voile clair) + reflet latéral
+        FruitRenderer.drawBloom(ctx, r);
         ctx.beginPath();
         ctx.arc(r * 0.15, -r * 0.1, r * 0.72, -0.7, 0.35, false);
         ctx.strokeStyle = FruitRenderer.shade(def.color, 0.25);
@@ -199,45 +200,123 @@ export class FruitRenderer {
         ctx.stroke();
         ctx.globalAlpha = 1;
         break;
-      case 3: // Ditakh : lenticelles
-        for (const [sx, sy] of [[-0.3, 0.25], [0.35, 0.3], [-0.4, -0.25]] as [number, number][]) {
+      case 3: // Ditakh : lenticelles + marbrures de peau
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.1);
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.3, -r * 0.35, r * 0.3, r * 0.22, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(r * 0.35, r * 0.25, r * 0.25, r * 0.2, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.3);
+        for (const [sx, sy] of [[-0.3, 0.25], [0.35, 0.3], [-0.4, -0.25], [0.1, -0.45], [0.5, -0.1]] as [number, number][]) {
           ctx.beginPath();
-          ctx.arc(sx * r, sy * r, r * 0.045, 0, Math.PI * 2);
+          ctx.arc(sx * r, sy * r, r * 0.04, 0, Math.PI * 2);
           ctx.fill();
         }
         break;
-      case 5: // Tol : point d'attache + pli
+      case 4: // Goyave : fin piquetis de peau
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.22);
+        for (const [sx, sy] of [[-0.45, 0.1], [-0.1, 0.4], [0.4, -0.1], [0.2, -0.45], [-0.3, -0.3], [0.05, 0.05]] as [number, number][]) {
+          ctx.beginPath();
+          ctx.arc(sx * r, sy * r, r * 0.035, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        FruitRenderer.drawSpecular(ctx, r, 0.3);
+        break;
+      case 5: // Tol (orange) : cratère du pédoncule + pli + reflet
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.45);
         ctx.beginPath();
-        ctx.arc(0, -r * 0.82, r * 0.05, 0, Math.PI * 2);
+        ctx.ellipse(0, -r * 0.72, r * 0.13, r * 0.09, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(0, r * 0.15, r * 0.55, -0.5, 0.5, false);
         ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.2);
         ctx.lineWidth = r * 0.06;
         ctx.stroke();
+        FruitRenderer.drawSpecular(ctx, r, 0.35);
         break;
-      case 6: // Bouye : taches veloutées
+      case 6: // Bouye (baobab) : taches veloutées + fibres + capuchon
         ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.15);
         for (const [sx, sy, rx, ry] of [[-0.4, -0.2, 0.25, 0.18], [0.35, 0.3, 0.3, 0.2]] as [number, number, number, number][]) {
           ctx.beginPath();
           ctx.ellipse(sx * r, sy * r, rx * r, ry * r, 0.5, 0, Math.PI * 2);
           ctx.fill();
         }
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.18);
+        ctx.lineWidth = r * 0.03;
+        for (const off of [-0.35, 0.05, 0.4]) {
+          ctx.beginPath();
+          ctx.moveTo(off * r, -r * 0.62);
+          ctx.quadraticCurveTo(off * r + r * 0.15, 0, off * r, r * 0.62);
+          ctx.stroke();
+        }
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.5);
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.85, r * 0.06, 0, Math.PI * 2);
+        ctx.fill();
         break;
-      case 7: // Kola : sillon vertical
+      case 7: // Kola : deux lobes bombés + sillon central
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.16);
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.3, 0, r * 0.4, r * 0.62, -0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(r * 0.3, 0, r * 0.4, r * 0.62, 0.25, 0, Math.PI * 2);
+        ctx.fill();
         ctx.beginPath();
         ctx.moveTo(0, -r * 0.6);
         ctx.quadraticCurveTo(r * 0.18, 0, 0, r * 0.6);
-        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.3);
-        ctx.lineWidth = r * 0.06;
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.45);
+        ctx.lineWidth = r * 0.07;
         ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.05, -r * 0.55);
+        ctx.quadraticCurveTo(r * 0.12, 0, -r * 0.05, r * 0.55);
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+        ctx.lineWidth = r * 0.03;
+        ctx.stroke();
+        FruitRenderer.drawSpecular(ctx, r, 0.25);
         break;
-      case 9: // New : point d'attache
+      case 8: // Coco : fibres + 3 yeux de germination
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.35);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(r * 0.3, -r * 0.3, r * 0.35, -2, 0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(-r * 0.2, r * 0.25, r * 0.3, 0.8, 2.4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(r * 0.15, r * 0.45, r * 0.3, -2.6, -1.2);
+        ctx.stroke();
+        for (const [ex, ey, rr] of [[-0.26, -0.42, 0.13], [0.06, -0.5, 0.12], [0.34, -0.38, 0.11]] as [number, number, number][]) {
+          ctx.beginPath();
+          ctx.arc(ex * r, ey * r, rr * r, 0, Math.PI * 2);
+          ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.9);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(ex * r, ey * r, rr * r * 0.65, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fill();
+        }
+        break;
+      case 9: // New : gousse dorée nervurée + attache
+        ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.32);
+        ctx.lineWidth = r * 0.045;
+        for (const off of [-0.35, 0, 0.35]) {
+          ctx.beginPath();
+          ctx.moveTo(off * r * 0.6, -r * 0.82);
+          ctx.quadraticCurveTo(off * r, 0, off * r * 0.6, r * 0.82);
+          ctx.stroke();
+        }
+        ctx.fillStyle = FruitRenderer.hexToCss(def.colorDark, 0.4);
         ctx.beginPath();
         ctx.arc(0, -r * 0.85, r * 0.05, 0, Math.PI * 2);
         ctx.fill();
+        FruitRenderer.drawSpecular(ctx, r, 0.35);
         break;
-      case 10: // Karité : couture + attache
+      case 10: // Karité : couture + attache + reflet
         ctx.beginPath();
         ctx.arc(0, -r * 0.82, r * 0.05, 0, Math.PI * 2);
         ctx.fill();
@@ -246,10 +325,35 @@ export class FruitRenderer {
         ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.18);
         ctx.lineWidth = r * 0.05;
         ctx.stroke();
+        FruitRenderer.drawSpecular(ctx, r, 0.35);
         break;
       default:
         break;
     }
+  }
+
+  /** Voile poudreux (pruine) : dégradé clair discret sur tout le fruit. */
+  private static drawBloom(ctx: CanvasRenderingContext2D, r: number): void {
+    const g = ctx.createRadialGradient(r * 0.1, -r * 0.2, r * 0.05, 0, 0, r * 0.95);
+    g.addColorStop(0, 'rgba(255,255,255,0.28)');
+    g.addColorStop(0.7, 'rgba(255,255,255,0.08)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /** Reflet spéculaire brillant (haut-gauche), façon éclair. */
+  private static drawSpecular(ctx: CanvasRenderingContext2D, r: number, alpha: number): void {
+    ctx.save();
+    ctx.translate(-r * 0.32, -r * 0.42);
+    ctx.rotate(-0.55);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.19, r * 0.11, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fill();
+    ctx.restore();
   }
 
   private static drawEllipseBase(
@@ -407,6 +511,12 @@ export class FruitRenderer {
     }
     ctx.restore();
     FruitRenderer.strokeOutline(ctx);
+    // reflet brillant côté haut-gauche
+    ctx.beginPath();
+    ctx.arc(-r * 0.32, -r * 0.4, r * 0.5, -2.45, -1.85, false);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = r * 0.09;
+    ctx.stroke();
     // tige
     ctx.strokeStyle = '#1e6b31';
     ctx.lineWidth = 5;
@@ -430,20 +540,5 @@ export class FruitRenderer {
       FruitRenderer.strokeOutline(ctx);
       ctx.restore();
     }
-  }
-
-  /** Coco : fibres. */
-  private static drawCocoFiber(ctx: CanvasRenderingContext2D, def: FruitDefinition, r: number): void {
-    ctx.strokeStyle = FruitRenderer.hexToCss(def.colorDark, 0.35);
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(r * 0.3, -r * 0.3, r * 0.35, -2, 0.3);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(-r * 0.2, r * 0.25, r * 0.3, 0.8, 2.4);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(r * 0.15, r * 0.45, r * 0.3, -2.6, -1.2);
-    ctx.stroke();
   }
 }

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'sn.merge.fruits',
+  appId: 'com.fruiz.game',
   appName: 'Fruiz',
   webDir: 'dist',
   // Orientation portrait verrouillée au niveau natif
