@@ -154,7 +154,8 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     if (newBest) {
-      const badgeC = this.add.container(cardW / 2 - 18 * k, -cardH / 2 - 10 * k).setAngle(12).setScale(0);
+      // Au-dessus de la carte, dégagé du score
+      const badgeC = this.add.container(cardW / 2 - 18 * k, -cardH / 2 - 48 * k).setAngle(12).setScale(0);
       const bgBadge = this.add.graphics();
       bgBadge.fillStyle(0xba1a1a, 1);
       bgBadge.fillRoundedRect(-105 * k, -20 * k, 210 * k, 40 * k, 20 * k);
