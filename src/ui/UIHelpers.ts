@@ -14,7 +14,7 @@ export interface ButtonOptions {
   /** Ombre portée "brutale" (décalage plein, pas de flou). */
   shadowColor?: number;
   /** Icône optionnelle (dessinée en Graphics). */
-  icon?: 'play' | 'pause' | 'leaf' | 'gear' | 'lock' | 'volume' | 'music';
+  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music';
   iconPosition?: 'left' | 'top';
 }
 
@@ -118,7 +118,7 @@ export class UIHelpers {
     x: number,
     y: number,
     s: number,
-    type: 'play' | 'pause' | 'leaf' | 'gear' | 'lock' | 'volume' | 'music',
+    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music',
   ): void {
     if (type === 'play') {
       g.fillStyle(0x27272f, 1);
@@ -154,6 +154,16 @@ export class UIHelpers {
       g.fillEllipse(x + s * 0.2, y, s * 0.55, s * 0.3);
       g.lineStyle(2, 0x27272f, 1);
       g.lineBetween(x + s * 0.6, y - s * 0.25, x + s * 0.85, y - s * 0.55);
+    } else if (type === 'fruit') {
+      // Fruit rond cartoon (terracotta) + feuille + reflet
+      g.fillStyle(0xc94f3d, 1);
+      g.fillCircle(x, y + s * 0.12, s * 0.58);
+      g.lineStyle(2, 0x27272f, 1);
+      g.strokeCircle(x, y + s * 0.12, s * 0.58);
+      g.fillStyle(0x2f9e44, 1);
+      g.fillEllipse(x + s * 0.38, y - s * 0.5, s * 0.34, s * 0.16);
+      g.fillStyle(0xffffff, 0.55);
+      g.fillCircle(x - s * 0.18, y - s * 0.02, s * 0.14);
     } else {
       g.lineStyle(3, 0x3d599e, 1);
       g.strokeCircle(x, y, s * 0.55);

@@ -46,6 +46,27 @@ export class MenuScene extends Phaser.Scene {
     this.buildLogo();
     this.buildButtons();
 
+    // Bouton aide (?) en haut à droite
+    UIHelpers.makeButton(
+      this,
+      {
+        x: w - 58 * k,
+        y: 62 * k,
+        width: 80 * k,
+        height: 80 * k,
+        label: '?',
+        fill: 0xffd54f,
+        radius: 20 * k,
+        depth: 25,
+        shadowColor: 0x3d599e,
+        fontSize: Math.round(44 * k),
+      },
+      () => {
+        audioManager.playButton();
+        this.openHelpPanel();
+      },
+    );
+
     // Échap ferme les panneaux ouverts (desktop)
     const kb = this.input.keyboard;
     if (kb) this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
@@ -97,34 +118,50 @@ export class MenuScene extends Phaser.Scene {
     const k = this.k;
     const w = this.scale.width;
 
-    // Carte logo FRUIZ (ombre indigo décalée, rebond lent)
-    const card = this.add.container(w / 2, 200 * k).setDepth(5);
-    const g = this.add.graphics();
-    g.fillStyle(0x3d599e, 1);
-    g.fillRoundedRect(-160 * k + 6 * k, -58 * k + 6 * k, 320 * k, 116 * k, 24 * k);
-    g.fillStyle(0xfff9ec, 1);
-    g.fillRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
-    g.lineStyle(4 * k, 0x27272f, 1);
-    g.strokeRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
-    card.add(g);
-    const logoText = this.add
-      .text(0, 0, 'FRUIZ', {
-        fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(76 * k)}px`,
-        color: '#c94f3d',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setStroke('#ffffff', 6 * k);
-    card.add(logoText);
-    this.tweens.add({
-      targets: card,
-      y: card.y - 14 * k,
-      duration: 2000,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    // Logo image (FRUIZ) si chargé, sinon carte procédurale.
+    // Pas de return : les étincelles et la mascotte suivent.
+    if (this.textures.exists('logo_title')) {
+      const logo = this.add.image(w / 2, 200 * k, 'logo_title').setDepth(5);
+      logo.displayWidth = Math.min(360 * k, w * 0.85);
+      logo.scaleY = logo.scaleX;
+      this.tweens.add({
+        targets: logo,
+        y: logo.y - 14 * k,
+        duration: 2000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      // Carte logo FRUIZ (ombre indigo décalée, rebond lent)
+      const card = this.add.container(w / 2, 200 * k).setDepth(5);
+      const g = this.add.graphics();
+      g.fillStyle(0x3d599e, 1);
+      g.fillRoundedRect(-160 * k + 6 * k, -58 * k + 6 * k, 320 * k, 116 * k, 24 * k);
+      g.fillStyle(0xfff9ec, 1);
+      g.fillRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
+      g.lineStyle(4 * k, 0x27272f, 1);
+      g.strokeRoundedRect(-160 * k, -58 * k, 320 * k, 116 * k, 24 * k);
+      card.add(g);
+      const logoText = this.add
+        .text(0, 0, 'FRUIZ', {
+          fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
+          fontSize: `${Math.round(76 * k)}px`,
+          color: '#c94f3d',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setStroke('#ffffff', 6 * k);
+      card.add(logoText);
+      this.tweens.add({
+        targets: card,
+        y: card.y - 14 * k,
+        duration: 2000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     // Étincelles ambiantes qui montent
     this.add
@@ -219,7 +256,7 @@ export class MenuScene extends Phaser.Scene {
         fill: 0xfff9ec,
         radius: 16 * k,
         shadowColor: 0xc94f3d,
-        icon: 'leaf',
+        icon: 'fruit',
         iconPosition: 'top',
         fontSize: Math.round(b2h * 0.3),
       },
@@ -301,8 +338,8 @@ export class MenuScene extends Phaser.Scene {
     const bandH = 90 * k;
     const band = this.add.graphics();
     band.fillStyle(0xf7be36, 1);
-    band.fillRect(-pw / 2, -ph / 2, pw, bandH);
-    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, bandH);
+    band.fillRoundedRect(-pw / 2, -ph / 2, pw, bandH, { tl: 30 * k, tr: 30 * k, bl: 0, br: 0 });
+    UIHelpers.drawWaxBand(band, -pw / 2 + 10 * k, -ph / 2, pw - 20 * k, bandH);
     band.lineStyle(4 * k, 0x27272f, 1);
     band.lineBetween(-pw / 2, -ph / 2 + bandH, pw / 2, -ph / 2 + bandH);
     container.add(band);
@@ -465,7 +502,9 @@ export class MenuScene extends Phaser.Scene {
     container.add(g);
 
     const band = this.add.graphics();
-    UIHelpers.drawWaxBand(band, -pw / 2, -ph / 2, pw, 18 * k);
+    band.fillStyle(0xf7be36, 1);
+    band.fillRoundedRect(-pw / 2, -ph / 2, pw, 18 * k, { tl: 30 * k, tr: 30 * k, bl: 0, br: 0 });
+    UIHelpers.drawWaxBand(band, -pw / 2 + 10 * k, -ph / 2, pw - 20 * k, 18 * k);
     container.add(band);
 
     const title = this.add
@@ -570,6 +609,143 @@ export class MenuScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 1);
     g.fillCircle(px, y, 26 * k);
     g.strokeCircle(px, y, 26 * k);
+  }
+
+  /** Pop-up « Comment jouer » : règles du jeu version mobile. */
+  private openHelpPanel(): void {
+    this.closePanel();
+    const k = this.k;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const pw = w * 0.9;
+    const ph = 640 * k;
+    const cx = w / 2;
+    const cy = h / 2;
+    const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
+
+    const container = this.add.container(cx, cy).setDepth(50);
+    this.panel = container;
+    container.setScale(0.25).setAlpha(0);
+    this.tweens.add({ targets: container, scale: 1, alpha: 1, duration: 300, ease: 'Back.easeOut' });
+
+    const dim = this.add.rectangle(0, 0, w, h, 0x27272f, 0).setInteractive();
+    dim.on('pointerdown', () => this.closePanel());
+    this.tweens.add({ targets: dim, fillAlpha: 0.45, duration: 250, ease: 'Sine.easeOut' });
+    container.add(dim);
+
+    const g = this.add.graphics();
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(-pw / 2 + 7 * k, -ph / 2 + 7 * k, pw, ph, 30 * k);
+    g.fillStyle(0xfff9ec, 1);
+    g.fillRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
+    g.lineStyle(6 * k, 0x27272f, 1);
+    g.strokeRoundedRect(-pw / 2, -ph / 2, pw, ph, 30 * k);
+    container.add(g);
+
+    // Bandeau wax + titre
+    const bandH = 90 * k;
+    const band = this.add.graphics();
+    band.fillStyle(0xf7be36, 1);
+    band.fillRoundedRect(-pw / 2, -ph / 2, pw, bandH, { tl: 30 * k, tr: 30 * k, bl: 0, br: 0 });
+    UIHelpers.drawWaxBand(band, -pw / 2 + 10 * k, -ph / 2, pw - 20 * k, bandH);
+    band.lineStyle(4 * k, 0x27272f, 1);
+    band.lineBetween(-pw / 2, -ph / 2 + bandH, pw / 2, -ph / 2 + bandH);
+    container.add(band);
+    const bandY = -ph / 2 + bandH / 2;
+    container.add(
+      this.add
+        .text(4 * k, bandY + 4 * k, 'COMMENT JOUER', {
+          fontFamily: FONT,
+          fontSize: `${Math.round(40 * k)}px`,
+          color: '#c94f3d',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5),
+    );
+    container.add(
+      this.add
+        .text(0, bandY, 'COMMENT JOUER', {
+          fontFamily: FONT,
+          fontSize: `${Math.round(40 * k)}px`,
+          color: '#ffffff',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5)
+        .setStroke('#27272f', 5 * k),
+    );
+
+    // Étapes illustrées : carte blanche + pastille fruit + texte
+    const steps: [string, string, number, number][] = [
+      ['Vise avec le doigt,\npuis relâche pour lancer !', 'fruit_2', 0xc94f3d, 27],
+
+['Associe 2 fruits identiques\npour les fusionner !', 'fruit_4', 0x2f9e44, 39],
+
+['Aucun fruit ne doit sortir\nde la calebasse !', 'fruit_5', 0xba1a1a, 45],
+
+['Plus la fusion est grande,\nplus tu gagnes de points !', 'fruit_6', 0x2d4a8e, 59],
+    ];
+    const rowW = pw - 60 * k;
+    const rowH = 104 * k;
+    const textW = rowW - 132 * k;
+    steps.forEach(([txt, tex, color, radius], i) => {
+      const y = -ph / 2 + bandH + 55 * k + i * (rowH + 16 * k);
+      const row = this.add.graphics();
+      row.fillStyle(0xffffff, 0.85);
+      row.fillRoundedRect(-rowW / 2, y - rowH / 2, rowW, rowH, 20 * k);
+      row.lineStyle(3 * k, color, 0.6);
+      row.strokeRoundedRect(-rowW / 2, y - rowH / 2, rowW, rowH, 20 * k);
+      container.add(row);
+      const badge = this.add.graphics();
+      badge.fillStyle(color, 1);
+      badge.fillCircle(-rowW / 2 + 55 * k, y, 34 * k);
+      badge.lineStyle(3 * k, 0x27272f, 1);
+      badge.strokeCircle(-rowW / 2 + 55 * k, y, 34 * k);
+      container.add(badge);
+      const fscale = (34 * k * 0.72) / (radius * 2);
+      container.add(this.add.image(-rowW / 2 + 55 * k, y, tex).setScale(fscale));
+      container.add(
+        this.add
+          .text(-rowW / 2 + 112 * k, y, txt, {
+            fontFamily: FONT,
+            fontSize: `${Math.round(23 * k)}px`,
+            color: '#58413e',
+            fontStyle: 'bold',
+            align: 'left',
+            wordWrap: { width: textW },
+          })
+          .setOrigin(0, 0.5),
+      );
+    });
+
+    // Bouton FERMER (absolu : input fiable sur mobile)
+    this.closeBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy + ph / 2 + 70 * k,
+        width: 220 * k,
+        height: 80 * k,
+        label: 'FERMER',
+        fill: 0xffd54f,
+        radius: 20 * k,
+        depth: 55,
+        shadowColor: 0xc94f3d,
+        fontSize: Math.round(30 * k),
+      },
+      () => {
+        audioManager.playButton();
+        this.closePanel();
+      },
+    );
+    this.closeBtn.setAlpha(0).setY(this.closeBtn.y + 50 * k);
+    this.tweens.add({
+      targets: this.closeBtn,
+      alpha: 1,
+      y: this.closeBtn.y - 50 * k,
+      delay: 300,
+      duration: 260,
+      ease: 'Back.easeOut',
+    });
   }
 
   private closePanel(): void {

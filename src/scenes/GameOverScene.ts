@@ -63,13 +63,14 @@ export class GameOverScene extends Phaser.Scene {
     g.strokeRoundedRect(-pw / 2, -P, pw, ph, 30 * k);
     panel.add(g);
 
-    // Bandeau wax en tête avec GAME OVER
+    // Bandeau wax en tête avec GAME OVER (coins hauts arrondis : pas de débordement)
     const headH = 72 * k;
+    const inset = 10 * k;
     const headC = this.add.container(0, -P);
     const head = this.add.graphics();
     head.fillStyle(0xf7be36, 1);
-    head.fillRect(-pw / 2, 0, pw, headH);
-    UIHelpers.drawWaxBand(head, -pw / 2, 0, pw, headH);
+    head.fillRoundedRect(-pw / 2, 0, pw, headH, { tl: 30 * k, tr: 30 * k, bl: 0, br: 0 });
+    UIHelpers.drawWaxBand(head, -pw / 2 + inset, 0, pw - inset * 2, headH);
     head.lineStyle(4 * k, 0x27272f, 1);
     head.lineBetween(-pw / 2, headH, pw / 2, headH);
     headC.add(head);

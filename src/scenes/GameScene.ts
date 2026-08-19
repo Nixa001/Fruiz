@@ -611,7 +611,7 @@ export class GameScene extends Phaser.Scene {
     overlay.add(dim);
 
     // Panneau crème avec ombre indigo
-    const pw = 480 * k;
+    const pw = Math.min(480 * k, w * 0.94);
     const ph = 600 * k;
     const g = this.add.graphics();
     g.fillStyle(0x3d599e, 1);
@@ -622,12 +622,13 @@ export class GameScene extends Phaser.Scene {
     g.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 30 * k);
     overlay.add(g);
 
-    // Bandeau wax en tête avec PAUSE
+    // Bandeau wax en tête avec PAUSE (coins hauts arrondis : pas de débordement)
     const headH = 96 * k;
+    const inset = 10 * k;
     const head = this.add.graphics();
     head.fillStyle(0xf7be36, 1);
-    head.fillRect(cx - pw / 2, cy - ph / 2, pw, headH);
-    UIHelpers.drawWaxBand(head, cx - pw / 2, cy - ph / 2, pw, headH);
+    head.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, headH, { tl: 30 * k, tr: 30 * k, bl: 0, br: 0 });
+    UIHelpers.drawWaxBand(head, cx - pw / 2 + inset, cy - ph / 2, pw - inset * 2, headH);
     head.lineStyle(4 * k, 0x27272f, 1);
     head.lineBetween(cx - pw / 2, cy - ph / 2 + headH, cx + pw / 2, cy - ph / 2 + headH);
     overlay.add(head);
