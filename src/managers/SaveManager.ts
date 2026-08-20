@@ -68,10 +68,11 @@ export class SaveManager {
     SaveManager.storage()?.setItem(KEYS.musicEnabled, enabled ? '1' : '0');
   }
 
-  /** Fruit le plus haut déjà débloqué (jamais, persistant). Défaut : 3. */
+  /** Fruit le plus haut déjà débloqué (jamais, persistant). Défaut : 4
+   * (les 4 premiers tiers sont spawnables/visibles dès le début). */
   static getUnlockedTier(): number {
     const v = SaveManager.storage()?.getItem(KEYS.unlockedTier);
-    return v ? parseInt(v, 10) || 3 : 3;
+    return v ? parseInt(v, 10) || 4 : 4;
   }
 
   static setUnlockedTier(tier: number): void {

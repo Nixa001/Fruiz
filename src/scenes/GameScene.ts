@@ -230,7 +230,7 @@ export class GameScene extends Phaser.Scene {
     // Calebasse peu profonde, large, en bas de l'écran (façon Ball Guys) :
     // on remplit, un fruit déborde → game over. Taille réduite de 20% ×2.
     // Remontée pour laisser la place à la barre d'évolution des fruits en bas.
-    const halfW = Math.min(w * 0.46, 330 * k) * 0.85;
+    const halfW = Math.min(w * 0.46, 330 * k) * 0.78;
     this.containerLeft = this.cx - halfW;
     this.containerRight = this.cx + halfW;
     this.containerBottom = h - 300 * k;
