@@ -12,7 +12,7 @@ const SHOW_COLLISION_CIRCLES = false;
 /** Boost visuel (sprite uniquement, sans toucher au corps physique) :
  * +10% tiers 1-5, +5% à partir de l'Orange (tier 6). */
 function visualScaleBoost(tier: number): number {
-  return tier >= 6 ? 1.03 : 1.1;
+  return tier >= 6 ? 1.01 : 1.1;
 }
 
 /** Sous-ensemble typé de la lib matter-js embarquée dans Phaser (Phaser.Physics.Matter.Matter). */

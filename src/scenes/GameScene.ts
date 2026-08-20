@@ -51,6 +51,8 @@ export class GameScene extends Phaser.Scene {
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
+  /** Debug (DEV only) : touches 1-9/0/-/= pour lâcher un tier précis (1-12). */
+  private debugTierKeys: { tier: number; key: Phaser.Input.Keyboard.Key }[] = [];
   /** Accumulateur du balayage anti-coincement (fruits qui flottent). */
   private unstickAccum = 0;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
@@ -165,6 +167,12 @@ export class GameScene extends Phaser.Scene {
         this.dropCurrent();
       }
     }
+    // Debug (DEV only) : lâcher un tier précis au clavier
+    for (const { tier, key } of this.debugTierKeys) {
+      if (Phaser.Input.Keyboard.JustDown(key)) {
+        this.spawnFruit(tier, this.previewX, this.previewY);
+      }
+    }
     for (const fruit of this.fruits) {
       fruit.update();
     }
@@ -222,7 +230,7 @@ export class GameScene extends Phaser.Scene {
     // Calebasse peu profonde, large, en bas de l'écran (façon Ball Guys) :
     // on remplit, un fruit déborde → game over. Taille réduite de 20% ×2.
     // Remontée pour laisser la place à la barre d'évolution des fruits en bas.
-    const halfW = Math.min(w * 0.46, 330 * k) * 0.7;
+    const halfW = Math.min(w * 0.46, 330 * k) * 0.85;
     this.containerLeft = this.cx - halfW;
     this.containerRight = this.cx + halfW;
     this.containerBottom = h - 300 * k;
@@ -514,6 +522,11 @@ export class GameScene extends Phaser.Scene {
     if (kb) {
       this.keys = kb.createCursorKeys();
       this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+      if (import.meta.env.DEV) {
+        const KC = Phaser.Input.Keyboard.KeyCodes;
+        const codes = [KC.ONE, KC.TWO, KC.THREE, KC.FOUR, KC.FIVE, KC.SIX, KC.SEVEN, KC.EIGHT, KC.NINE, KC.ZERO, KC.MINUS, KC.PLUS];
+        this.debugTierKeys = codes.map((code, i) => ({ tier: i + 1, key: kb.addKey(code) }));
+      }
     }
   }
 
