@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DPR } from '../dpr';
 
 type Emitter = Phaser.GameObjects.Particles.ParticleEmitter;
 
@@ -15,9 +16,9 @@ export class ParticleManager {
     const k = this.scene.scale.height / 1280;
     const emitter = this.getEmitter({
       frame: 'p_dot',
-      speed: { min: 60, max: 300 },
+      speed: { min: 60 * DPR, max: 300 * DPR },
       angle: { min: 200, max: 340 },
-      gravityY: 420,
+      gravityY: 420 * DPR,
       lifespan: { min: 350, max: 650 },
       scale: { start: 1.1 * k, end: 0 },
       alpha: { start: 1, end: 0 },
@@ -27,9 +28,9 @@ export class ParticleManager {
     emitter.explode(10 + tier * 2, x, y);
     const stars = this.getEmitter({
       frame: 'p_star',
-      speed: { min: 40, max: 160 },
+      speed: { min: 40 * DPR, max: 160 * DPR },
       angle: { min: 180, max: 360 },
-      gravityY: 260,
+      gravityY: 260 * DPR,
       lifespan: 550,
       scale: { start: 0.9 * k, end: 0 },
       alpha: { start: 1, end: 0 },
@@ -44,9 +45,9 @@ export class ParticleManager {
     const k = this.scene.scale.height / 1280;
     const emitter = this.getEmitter({
       frame: 'p_dot',
-      speed: { min: 20, max: 90 },
+      speed: { min: 20 * DPR, max: 90 * DPR },
       angle: { min: 200, max: 340 },
-      gravityY: 300,
+      gravityY: 300 * DPR,
       lifespan: 300,
       scale: { start: 0.6 * k, end: 0 },
       alpha: { start: 0.5, end: 0 },
@@ -60,9 +61,9 @@ export class ParticleManager {
     const k = this.scene.scale.height / 1280;
     const emitter = this.getEmitter({
       frame: 'p_star',
-      speed: { min: 120, max: 320 },
+      speed: { min: 120 * DPR, max: 320 * DPR },
       angle: { min: 160, max: 380 },
-      gravityY: 380,
+      gravityY: 380 * DPR,
       lifespan: 700,
       scale: { start: 1.2 * k, end: 0 },
       alpha: { start: 1, end: 0 },
@@ -77,9 +78,9 @@ export class ParticleManager {
     const k = this.scene.scale.height / 1280;
     const emitter = this.getEmitter({
       frame: 'p_confetti',
-      speed: { min: 120, max: 330 },
+      speed: { min: 120 * DPR, max: 330 * DPR },
       angle: { min: 0, max: 360 },
-      gravityY: 240,
+      gravityY: 240 * DPR,
       lifespan: { min: 600, max: 1000 },
       scale: { start: 1.1 * k, end: 1.1 * k },
       alpha: { start: 1, end: 0 },
@@ -98,9 +99,9 @@ export class ParticleManager {
       frame: 'p_confetti',
       x: { min: 0, max: w },
       y: -20,
-      speedY: { min: 120, max: 320 },
-      speedX: { min: -60, max: 60 },
-      gravityY: 160,
+      speedY: { min: 120 * DPR, max: 320 * DPR },
+      speedX: { min: -60 * DPR, max: 60 * DPR },
+      gravityY: 160 * DPR,
       lifespan: { min: 1800, max: 3000 },
       scale: { start: 1.4 * k, end: 1.4 * k },
       alpha: { start: 1, end: 0.9 },

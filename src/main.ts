@@ -4,22 +4,29 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { DPR } from './dpr';
 
 // Résolution de référence : portrait mobile 720x1280.
-// Le mode RESIZE + layout adaptatif gère toutes les tailles (360x800 → 720x1280).
+// Layout adaptatif gère toutes les tailles (360x800 → 720x1280).
+// Mode Scale.NONE + zoom inverse au DPR : le monde tourne en pixels
+// physiques (canvas net sur écrans retina), affiché à taille CSS via zoom.
+const physWidth = Math.round(window.innerWidth * DPR);
+const physHeight = Math.round(window.innerHeight * DPR);
+
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#f5efdf',
-  width: 720,
-  height: 1280,
+  width: physWidth,
+  height: physHeight,
   scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+    mode: Phaser.Scale.NONE,
+    zoom: 1 / DPR,
   },
   render: {
     antialias: true,
     roundPixels: false,
+    pixelArt: false,
   },
   fps: {
     target: 60,
@@ -31,6 +38,8 @@ const game = new Phaser.Game({
   physics: {
     default: 'matter',
     matter: {
+      // Valeur écrasée par GameScene.layout() (déjà proportionnelle à scale.height,
+      // donc auto-compensée DPR) dès la création de la scène de jeu.
       gravity: { x: 0, y: 1.6 },
       enableSleeping: true,
       debug: false,
@@ -38,6 +47,14 @@ const game = new Phaser.Game({
   },
   scene: [BootScene, PreloadScene, MenuScene, GameScene, GameOverScene],
 });
+
+const handleResize = (): void => {
+  const w = Math.round(window.innerWidth * DPR);
+  const h = Math.round(window.innerHeight * DPR);
+  game.scale.resize(w, h);
+};
+window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', handleResize);
 
 // Accès global pour les tests automatisés (scripts/smoke.mjs)
 (window as unknown as { __game?: Phaser.Game }).__game = game;

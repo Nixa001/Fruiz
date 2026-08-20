@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { SaveManager } from './SaveManager';
 
+/** Gain global des bruitages synthétisés (1 = neutre). */
+const SFX_GAIN = 1.8;
+
 /**
  * SFX 100% synthétisés (WebAudio). La musique de fond peut venir d'un
  * fichier externe (bgm_*.mp3 chargé par PreloadScene) ou retomber sur
@@ -19,11 +22,31 @@ export class AudioManager {
   constructor() {
     this.soundEnabled = SaveManager.isSoundEnabled();
     this.musicEnabled = SaveManager.isMusicEnabled();
+    // App backgroundée (Home, switch d'app) : le contexte WebAudio continue de
+    // tourner nativement même quand le JS est throttled, donc on doit le
+    // suspendre explicitement (Phaser gère déjà scene.sound via pauseOnBlur,
+    // mais pas notre AudioContext maison pour les SFX/musique synthétisée).
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.suspend();
+      else this.resumeIfNeeded();
+    });
+    window.addEventListener('pagehide', () => this.suspend());
   }
 
   /** Scène active qui porte le gestionnaire de sons (musique en fichier). */
   attachScene(scene: Phaser.Scene): void {
     this.scene = scene;
+  }
+
+  private suspend(): void {
+    this.ctx?.suspend().catch(() => undefined);
+    if (this.music?.isPlaying) this.music.pause();
+  }
+
+  private resumeIfNeeded(): void {
+    if (document.hidden) return;
+    this.ctx?.resume().catch(() => undefined);
+    if (this.musicEnabled && this.music && !this.music.isPlaying) this.music.resume();
   }
 
   /** À appeler après un geste utilisateur (débloque l'audio mobile). */
@@ -198,7 +221,9 @@ export class AudioManager {
       if (!Ctor) return;
       this.ctx = new Ctor();
       this.master = this.ctx.createGain();
-      this.master.gain.value = this.soundEnabled ? 1 : 0;
+      // Boost : la musique de fond (fichier mp3, volume 0.35) couvrait les
+      // bruitages synthétisés, à peine audibles en comparaison.
+      this.master.gain.value = this.soundEnabled ? SFX_GAIN : 0;
       this.master.connect(this.ctx.destination);
     }
   }
