@@ -4,6 +4,7 @@ import { FruitDefinition, FruitExpression } from '../types/GameTypes';
 import { FaceController } from './FaceController';
 import { FruitRenderer } from './FruitRenderer';
 import { FRUIT_HULLS } from '../data/FruitHulls';
+import { getFaceConfig } from '../data/FruitFaces';
 
 /** Debug : superpose le contour de collision Matter réel sur chaque fruit. */
 const SHOW_COLLISION_CIRCLES = false;
@@ -11,7 +12,7 @@ const SHOW_COLLISION_CIRCLES = false;
 /** Boost visuel (sprite uniquement, sans toucher au corps physique) :
  * +10% tiers 1-5, +5% à partir de l'Orange (tier 6). */
 function visualScaleBoost(tier: number): number {
-  return tier >= 6 ? 1.04 : 1.08;
+  return tier >= 6 ? 1.03 : 1.1;
 }
 
 /** Sous-ensemble typé de la lib matter-js embarquée dans Phaser (Phaser.Physics.Matter.Matter). */
@@ -120,7 +121,7 @@ export class Fruit extends Phaser.GameObjects.Container {
     this.add(this.sprite);
     // Le visage suit le rayon VISUEL (le corps est dessiné à l'échelle bodyScale)
     const visualRadius = this.def.radius * FruitRenderer.bodyScale(this.def.shape);
-    this.face = new FaceController(scene, visualRadius, opts.radiusScale);
+    this.face = new FaceController(scene, visualRadius, opts.radiusScale, getFaceConfig(tier));
     this.add(this.face.root);
 
     if (SHOW_COLLISION_CIRCLES) {

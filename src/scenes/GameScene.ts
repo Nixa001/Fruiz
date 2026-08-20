@@ -556,9 +556,9 @@ export class GameScene extends Phaser.Scene {
       this,
       {
         x: this.scale.width / 2,
-        y: 62 * k,
+        y: 90 * k,
         width: 92 * k,
-        height: 92 * k,
+        height: 100 * k,
         label: '❚❚',
         fill: 0xffd54f,
         radius: 22 * k,

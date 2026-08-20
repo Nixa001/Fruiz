@@ -182,7 +182,7 @@ export class MenuScene extends Phaser.Scene {
     // Mascotte pastèque vivante (grosse, au centre)
     const mascotY = 545 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
-    const img = this.add.image(0, 0, 'fruit_11').setScale(k * 1.05);
+    const img = this.add.image(0, 0, 'fruit_12').setScale(k * 1.05);
     mascot.add(img);
     this.mascotFace = new FaceController(this, 104, k * 1.05);
     mascot.add(this.mascotFace.root);

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { FruitExpression } from '../types/GameTypes';
+import { FaceConfig } from '../data/FruitFaces';
 
 interface ExpressionSpec {
   /** Taille des yeux (multiplicateur du rayon). */
@@ -59,10 +60,14 @@ export class FaceController {
   private blinkEvent!: Phaser.Time.TimerEvent;
   private glanceEvent!: Phaser.Time.TimerEvent;
 
-  constructor(scene: Phaser.Scene, r: number, radiusScale: number) {
+  constructor(scene: Phaser.Scene, r: number, radiusScale: number, faceConfig?: FaceConfig) {
+    const cfg = faceConfig ?? { dx: 0, dy: 0, scale: 1, rotation: 0 };
     this.scene = scene;
-    this.r = r;
-    this.root = scene.add.container(0, 0).setScale(radiusScale);
+    this.r = r * cfg.scale;
+    this.root = scene.add
+      .container(cfg.dx * r * radiusScale, cfg.dy * r * radiusScale)
+      .setScale(radiusScale)
+      .setRotation(cfg.rotation);
 
     const makeEye = (sx: number) => {
       const ex = sx * EYE_SPACING * r;

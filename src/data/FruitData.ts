@@ -10,16 +10,17 @@ import { FruitDefinition } from '../types/GameTypes';
  */
 export const FRUITS: FruitDefinition[] = [
   { id: 1, name: 'Jujube', radius: 22, color: 0x8a3b2b, colorDark: 0x5c261c, score: 10, shape: 'circle', spawnWeight: 30 },
-  { id: 2, name: 'Framboise', radius: 27, color: 0xc62840, colorDark: 0x8a1a2c, score: 20, shape: 'circle', spawnWeight: 24 },
-  { id: 3, name: 'Mûre', radius: 33, color: 0x2d1b4e, colorDark: 0x1c1132, score: 30, shape: 'circle', spawnWeight: 18 },
-  { id: 4, name: 'Banane', radius: 39, color: 0xf5d327, colorDark: 0xb89a0f, score: 40, shape: 'circle', spawnWeight: 0 },
-  { id: 5, name: 'Citron vert', radius: 45, color: 0x9fbf00, colorDark: 0x6c8200, score: 50, shape: 'circle', spawnWeight: 0 },
-  { id: 6, name: 'Orange', radius: 59, color: 0xff9800, colorDark: 0xc26a00, score: 80, shape: 'circle', spawnWeight: 0 },
-  { id: 7, name: 'Pêche', radius: 67, color: 0xffb300, colorDark: 0xc98400, score: 100, shape: 'circle', spawnWeight: 0 },
-  { id: 8, name: 'Pomme verte', radius: 75, color: 0x9ccc3c, colorDark: 0x6f9226, score: 150, shape: 'circle', spawnWeight: 0 },
-  { id: 9, name: 'Pomme rouge', radius: 84, color: 0xd32f2f, colorDark: 0x962020, score: 200, shape: 'circle', spawnWeight: 0 },
-  { id: 10, name: 'Noix de coco', radius: 93, color: 0x6d5a1f, colorDark: 0x473b14, score: 300, shape: 'circle', spawnWeight: 0 },
-  { id: 11, name: 'Pastèque', radius: 104, color: 0x2f9e44, colorDark: 0x1e6b2e, score: 500, shape: 'watermelon', spawnWeight: 0 },
+  { id: 2, name: 'Framboise', radius: 26, color: 0xc62840, colorDark: 0x8a1a2c, score: 20, shape: 'circle', spawnWeight: 24 },
+  { id: 3, name: 'Mûre', radius: 31, color: 0x2d1b4e, colorDark: 0x1c1132, score: 30, shape: 'circle', spawnWeight: 18 },
+  { id: 4, name: 'Citron vert', radius: 37, color: 0x9fbf00, colorDark: 0x6c8200, score: 40, shape: 'circle', spawnWeight: 0 },
+  { id: 5, name: 'Goyave', radius: 43, color: 0x7cb342, colorDark: 0x4f7a24, score: 50, shape: 'circle', spawnWeight: 0 },
+  { id: 6, name: 'Pêche', radius: 50, color: 0xffb300, colorDark: 0xc98400, score: 65, shape: 'circle', spawnWeight: 0 },
+  { id: 7, name: 'Orange', radius: 60, color: 0xff9800, colorDark: 0xc26a00, score: 90, shape: 'circle', spawnWeight: 0 },
+  { id: 8, name: 'Pomme rouge', radius: 68, color: 0xd32f2f, colorDark: 0x962020, score: 120, shape: 'circle', spawnWeight: 0 },
+  { id: 9, name: 'Pomme verte', radius: 76, color: 0x9ccc3c, colorDark: 0x6f9226, score: 160, shape: 'circle', spawnWeight: 0 },
+  { id: 10, name: 'Banane', radius: 85, color: 0xf5d327, colorDark: 0xb89a0f, score: 220, shape: 'circle', spawnWeight: 0 },
+  { id: 11, name: 'Noix de coco', radius: 94, color: 0x965f1a, colorDark: 0x603c10, score: 320, shape: 'circle', spawnWeight: 0 },
+  { id: 12, name: 'Pastèque', radius: 105, color: 0x2f9e44, colorDark: 0x1e6b2e, score: 500, shape: 'watermelon', spawnWeight: 0 },
 ];
 
 /** Fruits pouvant apparaître comme fruit à lancer (tiers 1-3). */

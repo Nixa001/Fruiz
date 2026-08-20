@@ -8,9 +8,9 @@ export class NextFruitUI {
   constructor(private scene: Phaser.Scene) {
     const k = scene.scale.height / 1280;
     const w = scene.scale.width;
-    const size = Math.min(118 * k, scene.scale.width * 0.17);
+    const size = Math.min(100 * k, scene.scale.width * 0.17);
     const x = w - 16 * k;
-    const y = 12 * k;
+    const y = 40 * k;
 
     const g = scene.add.graphics().setDepth(20);
     g.fillStyle(0x000000, 0.15);
