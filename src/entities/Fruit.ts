@@ -3,6 +3,16 @@ import { getFruit } from '../data/FruitData';
 import { FruitDefinition, FruitExpression } from '../types/GameTypes';
 import { FaceController } from './FaceController';
 import { FruitRenderer } from './FruitRenderer';
+import { FRUIT_HULLS } from '../data/FruitHulls';
+
+/** Debug : superpose le contour de collision Matter réel sur chaque fruit. */
+const SHOW_COLLISION_CIRCLES = false;
+
+/** Boost visuel (sprite uniquement, sans toucher au corps physique) :
+ * +10% tiers 1-5, +5% à partir de l'Orange (tier 6). */
+function visualScaleBoost(tier: number): number {
+  return tier >= 6 ? 1.04 : 1.08;
+}
 
 /** Sous-ensemble typé de la lib matter-js embarquée dans Phaser (Phaser.Physics.Matter.Matter). */
 interface MatterLib {
@@ -60,6 +70,7 @@ export class Fruit extends Phaser.GameObjects.Container {
   override readonly body: MatterBody;
   readonly radiusScale: number;
   readonly physicsRadius: number;
+  private readonly hullPoints: MatterJS.Vector[] | null;
   /** En cours de fusion : ignore les nouvelles collisions. */
   isMerging = false;
   /** Retiré du monde physique (en attente de destruction). */
@@ -82,7 +93,7 @@ export class Fruit extends Phaser.GameObjects.Container {
     this.physicsRadius = this.def.radius * opts.radiusScale * collisionScale;
     this.spawnTime = scene.time.now;
 
-    this.body = Matter.Bodies.circle(x, y, this.physicsRadius, {
+    const bodyOptions: MatterJS.IBodyDefinition = {
       friction: 0.5,
       frictionStatic: 0.9,
       restitution: 0.05,
@@ -92,16 +103,36 @@ export class Fruit extends Phaser.GameObjects.Container {
       sleepThreshold: 150,
       label: FRUIT_LABEL,
       collisionFilter: { category: FRUIT_CATEGORY, mask: FRUIT_CATEGORY | WALL_CATEGORY, group: 0 },
-    });
+    };
+    // Enveloppe convexe qui suit le contour réel du fruit (corps seul, sans
+    // tige/feuille) quand disponible ; sinon cercle simple (fruits procéduraux).
+    const hull = FRUIT_HULLS[tier];
+    const bodyScale = opts.radiusScale * collisionScale;
+    this.hullPoints = hull ? hull.map(([hx, hy]) => ({ x: hx * bodyScale, y: hy * bodyScale })) : null;
+    const body =
+      this.hullPoints &&
+      Matter.Bodies.fromVertices(x, y, [this.hullPoints], bodyOptions);
+    this.body = body || Matter.Bodies.circle(x, y, this.physicsRadius, bodyOptions);
     // Référence directe vers l'entité (lue dans les événements de collision)
     this.body.plugin = { fruit: this };
 
-    this.sprite = scene.add.image(0, 0, `fruit_${tier}`).setScale(opts.radiusScale);
+    this.sprite = scene.add.image(0, 0, `fruit_${tier}`).setScale(opts.radiusScale * visualScaleBoost(tier));
     this.add(this.sprite);
     // Le visage suit le rayon VISUEL (le corps est dessiné à l'échelle bodyScale)
     const visualRadius = this.def.radius * FruitRenderer.bodyScale(this.def.shape);
     this.face = new FaceController(scene, visualRadius, opts.radiusScale);
     this.add(this.face.root);
+
+    if (SHOW_COLLISION_CIRCLES) {
+      const dbg = scene.add.graphics();
+      dbg.lineStyle(2, 0xff0000, 0.9);
+      if (this.hullPoints) {
+        dbg.strokePoints(this.hullPoints, true);
+      } else {
+        dbg.strokeCircle(0, 0, this.physicsRadius);
+      }
+      this.add(dbg);
+    }
 
     this.setDepth(10);
     scene.add.existing(this);

@@ -280,7 +280,7 @@ export class GameOverScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 245, 239, 223);
   }
 
-  /** Fruits qui tombent en boucle derrière le panneau. */
+  /** Fruits qui tombent en boucle au premier plan, au-dessus du panneau. */
   private dropFruit(img: Phaser.GameObjects.Image, w: number, h: number): void {
     const startX = Phaser.Math.Between(Math.round(w * 0.08), Math.round(w * 0.92));
     img.setPosition(startX, -80).setAngle(Phaser.Math.Between(-15, 15));
@@ -299,7 +299,7 @@ export class GameOverScene extends Phaser.Scene {
   private spawnFruitRain(k: number, w: number, h: number): void {
     const textures = ['fruit_2', 'fruit_4', 'fruit_6', 'fruit_8', 'fruit_10'];
     for (const tex of textures) {
-      const img = this.add.image(0, 0, tex).setDepth(8).setScale(k * 0.5).setAlpha(0.85);
+      const img = this.add.image(0, 0, tex).setDepth(20).setScale(k * 0.5).setAlpha(0.85);
       this.dropFruit(img, w, h);
     }
   }

@@ -1,22 +1,24 @@
 import { FruitDefinition } from '../types/GameTypes';
 
 /**
- * Les 11 fruits du jeu — identité sénégalaise.
- * Couleurs proches du fruit réel, mais diversifiées pour un rendu attrayant.
+ * Les 11 fruits du jeu — assets illustrés réels (src/assets/fruit_<id>.png).
+ * `color`/`colorDark` servent de teinte de secours (fallback procédural,
+ * vignette de déblocage, particules de fusion) et suivent la couleur
+ * dominante de chaque image.
  * Ajouter un fruit = ajouter une définition ici. Rien d'autre à toucher :
  * le système de fusion, le rendu et le score sont génériques.
  */
 export const FRUITS: FruitDefinition[] = [
-  { id: 1, name: 'Gigibier', radius: 22, color: 0xd95535, colorDark: 0x9c3620, score: 10, shape: 'circle', spawnWeight: 30 },
-  { id: 2, name: 'Soump', radius: 27, color: 0x7e57c2, colorDark: 0x543a8a, score: 20, shape: 'circle', spawnWeight: 24 },
-  { id: 3, name: 'Ditakh', radius: 33, color: 0x558b2f, colorDark: 0x3a611d, score: 30, shape: 'circle', spawnWeight: 18 },
-  { id: 4, name: 'Goyave', radius: 39, color: 0xcddc39, colorDark: 0x9eaa1c, score: 40, shape: 'circle', spawnWeight: 0 },
-  { id: 5, name: 'Tol', radius: 45, color: 0xff9f1c, colorDark: 0xc26a00, score: 50, shape: 'circle', spawnWeight: 0 },
-  { id: 6, name: 'Bouye', radius: 59, color: 0x9c8f52, colorDark: 0x6e6432, score: 80, shape: 'circle', spawnWeight: 0 },
-  { id: 7, name: 'Kola', radius: 67, color: 0xa0522d, colorDark: 0x70361a, score: 100, shape: 'circle', spawnWeight: 0 },
-  { id: 8, name: 'Coco', radius: 75, color: 0x7a5c4e, colorDark: 0x533e34, score: 150, shape: 'circle', spawnWeight: 0 },
-  { id: 9, name: 'New', radius: 84, color: 0xdfa83f, colorDark: 0xae7c1f, score: 200, shape: 'circle', spawnWeight: 0 },
-  { id: 10, name: 'Karité', radius: 93, color: 0x7fb83a, colorDark: 0x588a24, score: 300, shape: 'circle', spawnWeight: 0 },
+  { id: 1, name: 'Jujube', radius: 22, color: 0x8a3b2b, colorDark: 0x5c261c, score: 10, shape: 'circle', spawnWeight: 30 },
+  { id: 2, name: 'Framboise', radius: 27, color: 0xc62840, colorDark: 0x8a1a2c, score: 20, shape: 'circle', spawnWeight: 24 },
+  { id: 3, name: 'Mûre', radius: 33, color: 0x2d1b4e, colorDark: 0x1c1132, score: 30, shape: 'circle', spawnWeight: 18 },
+  { id: 4, name: 'Banane', radius: 39, color: 0xf5d327, colorDark: 0xb89a0f, score: 40, shape: 'circle', spawnWeight: 0 },
+  { id: 5, name: 'Citron vert', radius: 45, color: 0x9fbf00, colorDark: 0x6c8200, score: 50, shape: 'circle', spawnWeight: 0 },
+  { id: 6, name: 'Orange', radius: 59, color: 0xff9800, colorDark: 0xc26a00, score: 80, shape: 'circle', spawnWeight: 0 },
+  { id: 7, name: 'Pêche', radius: 67, color: 0xffb300, colorDark: 0xc98400, score: 100, shape: 'circle', spawnWeight: 0 },
+  { id: 8, name: 'Pomme verte', radius: 75, color: 0x9ccc3c, colorDark: 0x6f9226, score: 150, shape: 'circle', spawnWeight: 0 },
+  { id: 9, name: 'Pomme rouge', radius: 84, color: 0xd32f2f, colorDark: 0x962020, score: 200, shape: 'circle', spawnWeight: 0 },
+  { id: 10, name: 'Noix de coco', radius: 93, color: 0x6d5a1f, colorDark: 0x473b14, score: 300, shape: 'circle', spawnWeight: 0 },
   { id: 11, name: 'Pastèque', radius: 104, color: 0x2f9e44, colorDark: 0x1e6b2e, score: 500, shape: 'watermelon', spawnWeight: 0 },
 ];
 

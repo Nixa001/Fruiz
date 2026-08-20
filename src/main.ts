@@ -1,10 +1,18 @@
 import Phaser from 'phaser';
+import decomp from 'poly-decomp';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
 import { DPR } from './dpr';
+
+// Décomposition des hulls concaves (Bodies.fromVertices) en morceaux convexes :
+// sans ça Matter aplatit les creux (hull convexe forcé) ou, pire, plante le
+// placement du corps physique (bug "téléporte à l'origine du monde").
+(Phaser.Physics.Matter as unknown as { Matter: { Common: { setDecomp(d: unknown): void } } }).Matter.Common.setDecomp(
+  decomp,
+);
 
 // Résolution de référence : portrait mobile 720x1280.
 // Layout adaptatif gère toutes les tailles (360x800 → 720x1280).

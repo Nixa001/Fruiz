@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Fruiz — Éditeur de contours de collision</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #1e1e24; color: #eee; margin: 0; padding: 16px; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .panel { background: #2a2a33; border-radius: 8px; padding: 12px; }
+  #wrap { position: relative; overflow: auto; max-width: 90vw; max-height: 80vh; border: 1px solid #444; }
+  canvas { display: block; cursor: crosshair; image-rendering: pixelated; }
+  button, input[type=number], input[type=text] {
+    font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #555;
+    background: #3a3a45; color: #eee; cursor: pointer;
+  }
+  input[type=number] { width: 70px; cursor: text; }
+  button:hover { background: #46465a; }
+  button.danger:hover { background: #6a2f2f; }
+  label { display: block; margin: 8px 0 4px; font-size: 12px; color: #aaa; }
+  textarea {
+    width: 480px; height: 140px; font-family: ui-monospace, monospace; font-size: 12px;
+    background: #16161c; color: #b8f0b8; border: 1px solid #444; border-radius: 6px; padding: 8px;
+  }
+  #hover { font-size: 12px; color: #999; margin-top: 6px; }
+  #count { font-weight: bold; color: #ffcc66; }
+</style>
+</head>
+<body>
+<h1>Éditeur de contours de collision — Fruiz</h1>
+<div class="row">
+  <div class="panel">
+    <label>1. Charger un fruit_N.png (src/assets/)</label>
+    <input type="file" id="file" accept="image/png" />
+    <label>2. Zoom</label>
+    <button id="zoomOut">−</button> <span id="zoomLabel">6x</span> <button id="zoomIn">+</button>
+    <label>3. Clique autour du CORPS du fruit (ignore tige/feuille). Clique = ajoute un point, dans l'ordre du contour.</label>
+    <button id="undo">Annuler dernier point</button>
+    <button id="clear" class="danger">Tout effacer</button>
+    <div id="hover">Points : <span id="count">0</span></div>
+    <div id="wrap"><canvas id="canvas"></canvas></div>
+  </div>
+  <div class="panel">
+    <label>Tier (numéro du fruit, 1-11)</label>
+    <input type="number" id="tier" value="1" min="1" max="11" />
+    <label>4. Résultat — colle cette ligne dans src/data/FruitHulls.ts</label>
+    <button id="export">Générer</button>
+    <button id="copy">Copier</button>
+    <textarea id="out" readonly placeholder="Charge une image, clique les points, puis Générer."></textarea>
+  </div>
+</div>
+
+<script>
+let img = new Image();
+let zoom = 6;
+let points = []; // en coordonnées natives (pixels de l'image source)
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+document.getElementById('file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  img = new Image();
+  img.onload = () => { points = []; draw(); };
+  img.src = url;
+});
+
+function draw() {
+  if (!img.width) return;
+  canvas.width = img.width * zoom;
+  canvas.height = img.height * zoom;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // grille légère pour repérer le centre
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2);
+  ctx.stroke();
+
+  if (points.length > 0) {
+    ctx.strokeStyle = '#ff3b3b';
+    ctx.fillStyle = 'rgba(255,59,59,0.15)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach(([x, y], i) => {
+      const px = x * zoom, py = y * zoom;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    });
+    if (points.length > 2) ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    points.forEach(([x, y], i) => {
+      ctx.fillStyle = i === 0 ? '#66ff66' : '#ff3b3b';
+      ctx.beginPath();
+      ctx.arc(x * zoom, y * zoom, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  document.getElementById('count').textContent = points.length;
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / zoom;
+  const y = (e.clientY - rect.top) / zoom;
+  points.push([x, y]);
+  draw();
+});
+
+document.getElementById('undo').addEventListener('click', () => { points.pop(); draw(); });
+document.getElementById('clear').addEventListener('click', () => { points = []; draw(); });
+document.getElementById('zoomIn').addEventListener('click', () => { zoom = Math.min(zoom + 1, 20); document.getElementById('zoomLabel').textContent = zoom + 'x'; draw(); });
+document.getElementById('zoomOut').addEventListener('click', () => { zoom = Math.max(zoom - 1, 1); document.getElementById('zoomLabel').textContent = zoom + 'x'; draw(); });
+
+document.getElementById('export').addEventListener('click', () => {
+  if (points.length < 3 || !img.width) {
+    document.getElementById('out').value = 'Trace au moins 3 points sur une image chargée.';
+    return;
+  }
+  const cx = img.width / 2, cy = img.height / 2;
+  const tier = document.getElementById('tier').value || '?';
+  const pts = points.map(([x, y]) => `[${(x - cx).toFixed(2)}, ${(y - cy).toFixed(2)}]`).join(', ');
+  document.getElementById('out').value = `  ${tier}: [${pts}],`;
+});
+
+document.getElementById('copy').addEventListener('click', () => {
+  const out = document.getElementById('out');
+  out.select();
+  navigator.clipboard.writeText(out.value);
+});
+</script>
+</body>
+</html>
