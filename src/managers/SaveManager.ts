@@ -8,7 +8,11 @@ const KEYS = {
   musicEnabled: 'merge_fruits_music',
   unlockedTier: 'merge_fruits_unlocked',
   game: 'merge_fruits_game',
+  favoriteTier: 'merge_fruits_favorite',
 } as const;
+
+/** Fruit favori par défaut (Pomme cannelle) tant que le joueur n'en a pas choisi un. */
+const DEFAULT_FAVORITE_TIER = 7;
 
 /** Fruit sauvegardé : position normalisée dans la calebasse ([-1,1] x, [0,1] y). */
 export interface SavedFruit {
@@ -123,5 +127,16 @@ export class SaveManager {
 
   static clearGame(): void {
     SaveManager.storage()?.removeItem(KEYS.game);
+  }
+
+  /** Fruit préféré choisi dans la Collection : déclenche la célébration
+   * spéciale "TON PRÉFÉRÉ !" à son déblocage. */
+  static getFavoriteTier(): number {
+    const v = SaveManager.storage()?.getItem(KEYS.favoriteTier);
+    return v ? parseInt(v, 10) || DEFAULT_FAVORITE_TIER : DEFAULT_FAVORITE_TIER;
+  }
+
+  static setFavoriteTier(tier: number): void {
+    SaveManager.storage()?.setItem(KEYS.favoriteTier, String(tier));
   }
 }

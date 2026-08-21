@@ -14,7 +14,7 @@ export interface ButtonOptions {
   /** Ombre portée "brutale" (décalage plein, pas de flou). */
   shadowColor?: number;
   /** Icône optionnelle (dessinée en Graphics). */
-  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home';
+  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home' | 'heart';
   iconPosition?: 'left' | 'top';
   /** Recolore l'icône gear (contraste sur fond coloré). */
   iconColor?: number;
@@ -120,10 +120,20 @@ export class UIHelpers {
     x: number,
     y: number,
     s: number,
-    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home',
+    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home' | 'heart',
     color?: number,
   ): void {
-    if (type === 'restart') {
+    if (type === 'heart') {
+      const heartColor = color ?? 0xc94f3d;
+      g.fillStyle(heartColor, 1);
+      g.beginPath();
+      g.moveTo(x, y + s * 0.55);
+      g.arc(x - s * 0.32, y - s * 0.05, s * 0.32, Math.PI * 0.15, Math.PI * 1.1, false);
+      g.arc(x + s * 0.32, y - s * 0.05, s * 0.32, Math.PI * 1.9, Math.PI * 0.85, false);
+      g.lineTo(x, y + s * 0.55);
+      g.closePath();
+      g.fillPath();
+    } else if (type === 'restart') {
       g.lineStyle(s * 0.2, 0x27272f, 1);
       g.beginPath();
       g.arc(x, y, s * 0.55, -2.4, 2.0, false);

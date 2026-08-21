@@ -8,6 +8,7 @@ import { AudioManager } from '../managers/AudioManager';
 import { ScoreManager } from './ScoreManager';
 import { ComboManager } from './ComboManager';
 import { ComboPopup } from '../ui/ComboPopup';
+import { SaveManager } from '../managers/SaveManager';
 import type { GameScene } from '../scenes/GameScene';
 
 interface PendingMerge {
@@ -208,7 +209,7 @@ export class MergeManager {
     const def = getFruit(tier);
     const cx = scene.scale.width / 2;
     const cy = scene.scale.height / 2;
-    const isFavorite = tier === 7;
+    const isFavorite = tier === SaveManager.getFavoriteTier();
     const isEpic = tier === 11 || tier === 12;
     this.screens.flash(0.55, 220);
     this.screens.shake(isFavorite ? 0.035 : 0.025, isFavorite ? 500 : 350);

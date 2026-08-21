@@ -429,11 +429,12 @@ export class MenuScene extends Phaser.Scene {
     badge.setScale(0);
     this.tweens.add({ targets: badge, scale: 1, delay: 250, duration: 300, ease: 'Back.easeOut' });
 
-    // Grille 3x4 de cellules rondes
+    // Grille 3x4 de cellules rondes (tap = choisir son fruit préféré)
     const cols = 3;
     const rows = 4;
     const cellW = pw / cols;
     const cellH = (ph - 150 * k) / rows;
+    const favoriteTier = SaveManager.getFavoriteTier();
     FRUITS.forEach((def, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
@@ -441,6 +442,7 @@ export class MenuScene extends Phaser.Scene {
       const y = -ph / 2 + 135 * k + cellH * (row + 0.5) - 14 * k;
       const d = cellW * 0.62;
       const unlocked = def.id <= unlockedTier;
+      const isFav = def.id === favoriteTier;
       const cellC = this.add.container(x, y);
       const cell = this.add.graphics();
       // Ombre portée + pastille couleur du fruit + cœur blanc qui fait ressortir le fruit
@@ -450,7 +452,7 @@ export class MenuScene extends Phaser.Scene {
       cell.fillCircle(0, 0, d / 2);
       cell.fillStyle(0xffffff, 0.92);
       cell.fillCircle(0, 0, d * 0.42);
-      cell.lineStyle(4 * k, 0x27272f, 1);
+      cell.lineStyle(4 * k, isFav ? 0xc94f3d : 0x27272f, 1);
       cell.strokeCircle(0, 0, d / 2);
       cellC.add(cell);
       if (unlocked) {
@@ -466,6 +468,18 @@ export class MenuScene extends Phaser.Scene {
         UIHelpers.drawIcon(lock, 0, 0, d * 0.26, 'lock');
         cellC.add(lock);
       }
+      // Cœur : indique/permet de choisir le fruit préféré (célébration spéciale au déblocage)
+      const heartBadge = this.add.container(d / 2 - 10 * k, -d / 2 + 10 * k);
+      const heartBg = this.add.graphics();
+      heartBg.fillStyle(isFav ? 0xc94f3d : 0xffffff, 1);
+      heartBg.fillCircle(0, 0, 17 * k);
+      heartBg.lineStyle(3 * k, 0x27272f, 1);
+      heartBg.strokeCircle(0, 0, 17 * k);
+      heartBadge.add(heartBg);
+      const heartIco = this.add.graphics();
+      UIHelpers.drawIcon(heartIco, 0, 0, 15 * k, 'heart', isFav ? 0xffffff : 0xe0a0a0);
+      heartBadge.add(heartIco);
+      cellC.add(heartBadge);
       cellC.add(
         this.add
           .text(0, d / 2 + 24 * k, def.name, {
@@ -477,6 +491,13 @@ export class MenuScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
       container.add(cellC);
+      const zone = this.add.zone(0, 0, d, d).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        audioManager.playButton();
+        SaveManager.setFavoriteTier(def.id);
+        this.openFruitsPanel();
+      });
+      cellC.add(zone);
       // Pop en cascade des cellules
       cellC.setScale(0);
       this.tweens.add({ targets: cellC, scale: 1, delay: 200 + i * 45, duration: 280, ease: 'Back.easeOut' });
@@ -659,7 +680,7 @@ export class MenuScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     const pw = w * 0.9;
-    const ph = 640 * k;
+    const ph = 760 * k;
     const cx = w / 2;
     const cy = h / 2;
     const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
@@ -716,7 +737,8 @@ export class MenuScene extends Phaser.Scene {
     );
 
     // Étapes illustrées : carte blanche + pastille fruit + texte
-    const steps: [string, string, number, number][] = [
+    // tex à null = icône cœur au lieu d'un fruit (radius ignoré dans ce cas)
+    const steps: [string, string | null, number, number][] = [
       ['Vise avec le doigt,\npuis relâche pour lancer !', 'fruit_2', 0xc94f3d, 27],
 
 ['Associe 2 fruits identiques\npour les fusionner !', 'fruit_4', 0x2f9e44, 39],
@@ -724,6 +746,8 @@ export class MenuScene extends Phaser.Scene {
 ['Aucun fruit ne doit sortir\nde la calebasse !', 'fruit_5', 0xba1a1a, 45],
 
 ['Plus la fusion est grande,\nplus tu gagnes de points !', 'fruit_6', 0x2d4a8e, 59],
+
+['Choisis ton fruit préféré dans\nCollection : fête spéciale à son déblocage !', null, 0xc94f3d, 0],
     ];
     const rowW = pw - 60 * k;
     const rowH = 104 * k;
@@ -742,8 +766,14 @@ export class MenuScene extends Phaser.Scene {
       badge.lineStyle(3 * k, 0x27272f, 1);
       badge.strokeCircle(-rowW / 2 + 55 * k, y, 34 * k);
       container.add(badge);
-      const fscale = (34 * k * 0.72) / (radius * 2);
-      container.add(this.add.image(-rowW / 2 + 55 * k, y, tex).setScale(fscale));
+      if (tex) {
+        const fscale = (34 * k * 0.72) / (radius * 2);
+        container.add(this.add.image(-rowW / 2 + 55 * k, y, tex).setScale(fscale));
+      } else {
+        const heartIco = this.add.graphics();
+        UIHelpers.drawIcon(heartIco, -rowW / 2 + 55 * k, y, 24 * k, 'heart', 0xffffff);
+        container.add(heartIco);
+      }
       container.add(
         this.add
           .text(-rowW / 2 + 112 * k, y, txt, {
