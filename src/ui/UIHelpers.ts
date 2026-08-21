@@ -16,6 +16,8 @@ export interface ButtonOptions {
   /** Icône optionnelle (dessinée en Graphics). */
   icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home';
   iconPosition?: 'left' | 'top';
+  /** Recolore l'icône gear (contraste sur fond coloré). */
+  iconColor?: number;
 }
 
 /** Helpers UI cartoon partagés entre les scènes. */
@@ -80,9 +82,9 @@ export class UIHelpers {
       const ig = scene.add.graphics();
       if (iconPos === 'left') {
         const ix = label ? -width / 2 + height * 0.62 : 0;
-        UIHelpers.drawIcon(ig, ix, 0, height * 0.28, opts.icon);
+        UIHelpers.drawIcon(ig, ix, 0, height * 0.28, opts.icon, opts.iconColor);
       } else {
-        UIHelpers.drawIcon(ig, 0, -height * 0.2, height * 0.26, opts.icon);
+        UIHelpers.drawIcon(ig, 0, -height * 0.2, height * 0.26, opts.icon, opts.iconColor);
         textY = height * 0.16;
       }
       container.add(ig);
@@ -119,6 +121,7 @@ export class UIHelpers {
     y: number,
     s: number,
     type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home',
+    color?: number,
   ): void {
     if (type === 'restart') {
       g.lineStyle(s * 0.2, 0x27272f, 1);
@@ -180,9 +183,10 @@ export class UIHelpers {
       g.fillStyle(0xffffff, 0.55);
       g.fillCircle(x - s * 0.18, y - s * 0.02, s * 0.14);
     } else {
-      g.lineStyle(3, 0x3d599e, 1);
+      const gearColor = color ?? 0x3d599e;
+      g.lineStyle(3, gearColor, 1);
       g.strokeCircle(x, y, s * 0.55);
-      g.fillStyle(0x3d599e, 1);
+      g.fillStyle(gearColor, 1);
       for (let i = 0; i < 6; i++) {
         const a = (i * Math.PI) / 3;
         g.fillRect(x + Math.cos(a) * s * 0.45 - 1.5, y + Math.sin(a) * s * 0.45 - 1.5, 3, 3);
