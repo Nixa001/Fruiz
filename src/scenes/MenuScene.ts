@@ -429,23 +429,25 @@ export class MenuScene extends Phaser.Scene {
     badge.setScale(0);
     this.tweens.add({ targets: badge, scale: 1, delay: 250, duration: 300, ease: 'Back.easeOut' });
 
-    // Grille 3x4 de cellules rondes (tap = choisir son fruit préféré)
+    // Grille 3x4 de cellules rondes (tap = choisir son fruit préféré, tiers 4+
+    // seulement : les tiers 1-3 sont débloqués d'office, jamais de fête possible)
     const cols = 3;
     const rows = 4;
     const cellW = pw / cols;
     const cellH = (ph - 150 * k) / rows;
-    const favoriteTier = SaveManager.getFavoriteTier();
-    FRUITS.forEach((def, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = -pw / 2 + cellW * (col + 0.5);
-      const y = -ph / 2 + 135 * k + cellH * (row + 0.5) - 14 * k;
-      const d = cellW * 0.62;
-      const unlocked = def.id <= unlockedTier;
-      const isFav = def.id === favoriteTier;
-      const cellC = this.add.container(x, y);
-      const cell = this.add.graphics();
-      // Ombre portée + pastille couleur du fruit + cœur blanc qui fait ressortir le fruit
+    let currentFavorite = SaveManager.getFavoriteTier();
+    const cellRefs = new Map<
+      number,
+      { d: number; cell: Phaser.GameObjects.Graphics; heartBg: Phaser.GameObjects.Graphics; heartIco: Phaser.GameObjects.Graphics; unlocked: boolean; def: (typeof FRUITS)[number] }
+    >();
+    const drawCell = (
+      cell: Phaser.GameObjects.Graphics,
+      d: number,
+      def: (typeof FRUITS)[number],
+      unlocked: boolean,
+      isFav: boolean,
+    ): void => {
+      cell.clear();
       cell.fillStyle(0x27272f, 1);
       cell.fillCircle(3 * k, 3 * k, d / 2);
       cell.fillStyle(unlocked ? def.color : 0xe0e3e8, unlocked ? 0.38 : 1);
@@ -454,6 +456,46 @@ export class MenuScene extends Phaser.Scene {
       cell.fillCircle(0, 0, d * 0.42);
       cell.lineStyle(4 * k, isFav ? 0xc94f3d : 0x27272f, 1);
       cell.strokeCircle(0, 0, d / 2);
+    };
+    const drawHeart = (
+      heartBg: Phaser.GameObjects.Graphics,
+      heartIco: Phaser.GameObjects.Graphics,
+      isFav: boolean,
+    ): void => {
+      heartBg.clear();
+      heartBg.fillStyle(isFav ? 0xc94f3d : 0xffffff, 1);
+      heartBg.fillCircle(0, 0, 17 * k);
+      heartBg.lineStyle(3 * k, 0x27272f, 1);
+      heartBg.strokeCircle(0, 0, 17 * k);
+      heartIco.clear();
+      UIHelpers.drawIcon(heartIco, 0, 0, 15 * k, 'heart', isFav ? 0xffffff : 0xe0a0a0);
+    };
+    /** Change le favori sans reconstruire toute la grille : redessine juste
+     * l'ancienne et la nouvelle cellule concernées. */
+    const selectFavorite = (tier: number): void => {
+      const prev = currentFavorite;
+      if (tier === prev) return;
+      currentFavorite = tier;
+      for (const t of [prev, tier]) {
+        const ref = cellRefs.get(t);
+        if (!ref) continue;
+        const isFav = t === currentFavorite;
+        drawCell(ref.cell, ref.d, ref.def, ref.unlocked, isFav);
+        drawHeart(ref.heartBg, ref.heartIco, isFav);
+      }
+    };
+    FRUITS.forEach((def, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = -pw / 2 + cellW * (col + 0.5);
+      const y = -ph / 2 + 135 * k + cellH * (row + 0.5) - 14 * k;
+      const d = cellW * 0.62;
+      const unlocked = def.id <= unlockedTier;
+      const canBeFavorite = def.id >= 4;
+      const isFav = def.id === currentFavorite;
+      const cellC = this.add.container(x, y);
+      const cell = this.add.graphics();
+      drawCell(cell, d, def, unlocked, isFav);
       cellC.add(cell);
       if (unlocked) {
         // Fruit agrandi : taille cible commune calée sur la cellule
@@ -468,18 +510,17 @@ export class MenuScene extends Phaser.Scene {
         UIHelpers.drawIcon(lock, 0, 0, d * 0.26, 'lock');
         cellC.add(lock);
       }
-      // Cœur : indique/permet de choisir le fruit préféré (célébration spéciale au déblocage)
-      const heartBadge = this.add.container(d / 2 - 10 * k, -d / 2 + 10 * k);
-      const heartBg = this.add.graphics();
-      heartBg.fillStyle(isFav ? 0xc94f3d : 0xffffff, 1);
-      heartBg.fillCircle(0, 0, 17 * k);
-      heartBg.lineStyle(3 * k, 0x27272f, 1);
-      heartBg.strokeCircle(0, 0, 17 * k);
-      heartBadge.add(heartBg);
-      const heartIco = this.add.graphics();
-      UIHelpers.drawIcon(heartIco, 0, 0, 15 * k, 'heart', isFav ? 0xffffff : 0xe0a0a0);
-      heartBadge.add(heartIco);
-      cellC.add(heartBadge);
+      // Cœur : indique/permet de choisir le fruit préféré (célébration spéciale
+      // au déblocage) — seulement pour les tiers 4+ (les seuls "débloquables")
+      if (canBeFavorite) {
+        const heartBadge = this.add.container(d / 2 - 10 * k, -d / 2 + 10 * k);
+        const heartBg = this.add.graphics();
+        const heartIco = this.add.graphics();
+        drawHeart(heartBg, heartIco, isFav);
+        heartBadge.add([heartBg, heartIco]);
+        cellC.add(heartBadge);
+        cellRefs.set(def.id, { d, cell, heartBg, heartIco, unlocked, def });
+      }
       cellC.add(
         this.add
           .text(0, d / 2 + 24 * k, def.name, {
@@ -491,13 +532,20 @@ export class MenuScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
       container.add(cellC);
-      const zone = this.add.zone(0, 0, d, d).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        audioManager.playButton();
-        SaveManager.setFavoriteTier(def.id);
-        this.openFruitsPanel();
-      });
-      cellC.add(zone);
+      if (canBeFavorite) {
+        const zone = this.add.zone(0, 0, d, d).setInteractive({ useHandCursor: true });
+        // Anti double-tap (même garde-fou que UIHelpers.makeButton)
+        let lastTapAt = 0;
+        zone.on('pointerdown', () => {
+          const now = performance.now();
+          if (now - lastTapAt < 250) return;
+          lastTapAt = now;
+          audioManager.playButton();
+          SaveManager.setFavoriteTier(def.id);
+          selectFavorite(def.id);
+        });
+        cellC.add(zone);
+      }
       // Pop en cascade des cellules
       cellC.setScale(0);
       this.tweens.add({ targets: cellC, scale: 1, delay: 200 + i * 45, duration: 280, ease: 'Back.easeOut' });

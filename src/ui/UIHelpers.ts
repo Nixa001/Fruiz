@@ -124,15 +124,15 @@ export class UIHelpers {
     color?: number,
   ): void {
     if (type === 'heart') {
+      // Deux lobes (cercles) + pointe basse (triangle) : fiable, contrairement
+      // à un unique path arc/lineTo qui produisait une forme non reconnaissable.
       const heartColor = color ?? 0xc94f3d;
+      const lobeR = s * 0.34;
+      const lobeY = y - s * 0.12;
       g.fillStyle(heartColor, 1);
-      g.beginPath();
-      g.moveTo(x, y + s * 0.55);
-      g.arc(x - s * 0.32, y - s * 0.05, s * 0.32, Math.PI * 0.15, Math.PI * 1.1, false);
-      g.arc(x + s * 0.32, y - s * 0.05, s * 0.32, Math.PI * 1.9, Math.PI * 0.85, false);
-      g.lineTo(x, y + s * 0.55);
-      g.closePath();
-      g.fillPath();
+      g.fillCircle(x - lobeR * 0.95, lobeY, lobeR);
+      g.fillCircle(x + lobeR * 0.95, lobeY, lobeR);
+      g.fillTriangle(x - lobeR * 1.9, lobeY, x + lobeR * 1.9, lobeY, x, y + s * 0.58);
     } else if (type === 'restart') {
       g.lineStyle(s * 0.2, 0x27272f, 1);
       g.beginPath();

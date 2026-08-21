@@ -494,10 +494,10 @@ export class GameScene extends Phaser.Scene {
     this.previewX = this.cx;
     // depth 30 : le fruit à lancer passe au-dessus des cartes du HUD
     this.previewGroup = this.add.container(this.previewX, this.previewY).setDepth(30);
-    this.previewSprite = this.add.image(0, 0, `fruit_${this.currentTier}`).setScale(this.scaleK);
+    this.previewSprite = this.add.image(0, 0, `fruit_${this.currentTier}`).setScale(this.scaleK * 0.3);
     this.previewGroup.add(this.previewSprite);
     this.guideGraphics = this.add.graphics().setDepth(5);
-    this.startPreviewBounce();
+    this.popInPreview();
     this.updatePreviewPosition();
   }
 
@@ -512,10 +512,30 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /** Apparition du fruit en main : pop avec rebond (au lieu d'un cut instantané). */
+  private popInPreview(): void {
+    const k = this.scaleK;
+    this.tweens.add({
+      targets: this.previewSprite,
+      scale: k * 1.15,
+      duration: 220,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: this.previewSprite,
+          scale: k,
+          duration: 140,
+          ease: 'Quad.easeOut',
+          onComplete: () => this.startPreviewBounce(),
+        });
+      },
+    });
+  }
+
   private refreshPreview(): void {
     this.tweens.killTweensOf(this.previewSprite);
-    this.previewSprite.setTexture(`fruit_${this.currentTier}`).setScale(this.scaleK);
-    this.startPreviewBounce();
+    this.previewSprite.setTexture(`fruit_${this.currentTier}`).setScale(this.scaleK * 0.3);
+    this.popInPreview();
     this.updatePreviewPosition();
     // NB : nextFruitUI est mis à jour séparément (mi-parcours de la chute)
   }
