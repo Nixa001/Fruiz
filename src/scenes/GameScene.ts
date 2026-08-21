@@ -11,7 +11,7 @@ import { ScoreUI } from '../ui/ScoreUI';
 import { ComboPopup } from '../ui/ComboPopup';
 import { NextFruitUI } from '../ui/NextFruitUI';
 import { EvolutionBar } from '../ui/EvolutionBar';
-import { SaveManager } from '../managers/SaveManager';
+import { SaveManager, SavedFruit } from '../managers/SaveManager';
 import { ParticleManager } from '../managers/ParticleManager';
 import { ScreenEffects } from '../effects/ScreenEffects';
 import { audioManager } from '../managers/AudioManager';
@@ -36,6 +36,9 @@ export class GameScene extends Phaser.Scene {
   private pauseResumeBtn?: Phaser.GameObjects.Container;
   private pauseRestartBtn?: Phaser.GameObjects.Container;
   private pauseMenuBtn?: Phaser.GameObjects.Container;
+  private pauseSettingsBtn?: Phaser.GameObjects.Container;
+  private settingsOverlay?: Phaser.GameObjects.Container;
+  private settingsCloseBtn?: Phaser.GameObjects.Container;
 
   fruits: Fruit[] = [];
   private walls: MatterBody[] = [];
@@ -75,7 +78,7 @@ export class GameScene extends Phaser.Scene {
     super('Game');
   }
 
-  create(): void {
+  create(data?: { resume?: boolean }): void {
     // Reset d'état : scene.restart() réutilise la même instance de scène
     this.fruits = [];
     this.walls = [];
@@ -88,6 +91,9 @@ export class GameScene extends Phaser.Scene {
     this.pauseResumeBtn = undefined;
     this.pauseRestartBtn = undefined;
     this.pauseMenuBtn = undefined;
+    this.pauseSettingsBtn = undefined;
+    this.settingsOverlay = undefined;
+    this.settingsCloseBtn = undefined;
 
     // Physique ferme : les fruits se poussent sans se superposer
     const engine = this.matter.world.engine;
@@ -134,14 +140,60 @@ export class GameScene extends Phaser.Scene {
     // Bouton pause (haut centre) + overlay REPRENDRE / MENU
     this.buildPauseButton();
 
-    this.currentTier = rollSpawnTier();
-    this.nextTier = rollSpawnTier();
+    const saved = data?.resume ? SaveManager.loadGame() : null;
+    if (saved) {
+      this.restoreSavedGame(saved);
+    } else {
+      SaveManager.clearGame();
+      this.currentTier = rollSpawnTier();
+      this.nextTier = rollSpawnTier();
+    }
     this.refreshPreview();
     // Première révélation du NEXT (aucun fruit en chute au démarrage)
     this.nextFruitUI.setTier(this.nextTier);
 
     this.scale.on('resize', this.onResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown, this);
+
+    // Sauvegarde périodique : permet de reprendre la partie depuis le menu
+    this.time.addEvent({ delay: 3000, loop: true, callback: () => this.saveGameState() });
+  }
+
+  /** Recrée les fruits d'une partie sauvegardée à partir de positions normalisées. */
+  private restoreSavedGame(saved: import('../managers/SaveManager').GameSaveState): void {
+    this.scoreManager.score = saved.score;
+    this.scoreManager.best = Math.max(this.scoreManager.best, saved.score);
+    this.mergeManager.bestTier = saved.bestTier;
+    this.currentTier = saved.currentTier;
+    this.nextTier = saved.nextTier;
+    const halfW = (this.containerRight - this.containerLeft) / 2;
+    const halfH = this.containerBottom - this.containerTop;
+    for (const f of saved.fruits) {
+      const x = this.cx + f.nx * halfW;
+      const y = this.containerTop + f.ny * halfH;
+      this.spawnFruit(f.tier, x, y);
+    }
+  }
+
+  /** Sauvegarde l'état courant (score, tiers, positions) pour reprise ultérieure. */
+  private saveGameState(): void {
+    if (this.gameOverTriggered) return;
+    const halfW = (this.containerRight - this.containerLeft) / 2;
+    const halfH = this.containerBottom - this.containerTop;
+    const fruits: SavedFruit[] = this.fruits
+      .filter((f) => !f.isRemoved && f.body)
+      .map((f) => ({
+        tier: f.def.id,
+        nx: (f.body.position.x - this.cx) / halfW,
+        ny: (f.body.position.y - this.containerTop) / halfH,
+      }));
+    SaveManager.saveGame({
+      score: this.scoreManager.score,
+      bestTier: this.mergeManager.bestTier,
+      currentTier: this.currentTier,
+      nextTier: this.nextTier,
+      fruits,
+    });
   }
 
   override update(): void {
@@ -593,11 +645,14 @@ export class GameScene extends Phaser.Scene {
       this.showPauseOverlay();
     } else {
       // Les boutons sont créés en absolu (input fiable) : à détruire à part
+      this.closePauseSettings();
       this.pauseResumeBtn?.destroy();
       this.pauseRestartBtn?.destroy();
+      this.pauseSettingsBtn?.destroy();
       this.pauseMenuBtn?.destroy();
       this.pauseResumeBtn = undefined;
       this.pauseRestartBtn = undefined;
+      this.pauseSettingsBtn = undefined;
       this.pauseMenuBtn = undefined;
       this.pauseOverlay?.destroy();
       this.pauseOverlay = undefined;
@@ -625,7 +680,7 @@ export class GameScene extends Phaser.Scene {
 
     // Panneau crème avec ombre indigo
     const pw = Math.min(480 * k, w * 0.94);
-    const ph = 600 * k;
+    const ph = 700 * k;
     const g = this.add.graphics();
     g.fillStyle(0x3d599e, 1);
     g.fillRoundedRect(cx - pw / 2 + 7 * k, cy - ph / 2 + 7 * k, pw, ph, 30 * k);
@@ -670,7 +725,7 @@ export class GameScene extends Phaser.Scene {
     // trait sous le bandeau
     const rule = this.add.graphics();
     rule.lineStyle(4 * k, 0x27272f, 0.35);
-    rule.lineBetween(cx - 180 * k, cy - 150 * k, cx + 180 * k, cy - 150 * k);
+    rule.lineBetween(cx - 180 * k, cy - ph / 2 + headH + 14 * k, cx + 180 * k, cy - ph / 2 + headH + 14 * k);
     overlay.add(rule);
 
     this.pauseOverlay = overlay;
@@ -679,12 +734,13 @@ export class GameScene extends Phaser.Scene {
 
     // Boutons (absolus : input fiable sur mobile) — couleurs wax vives
     const bw = Math.min(380 * k, w * 0.78);
-    const bh = 96 * k;
+    const bh = 84 * k;
+    const step = 96 * k;
     this.pauseResumeBtn = UIHelpers.makeButton(
       this,
       {
         x: cx,
-        y: cy - 96 * k,
+        y: cy - 1.5 * step,
         width: bw,
         height: bh,
         label: 'REPRENDRE',
@@ -705,7 +761,7 @@ export class GameScene extends Phaser.Scene {
       this,
       {
         x: cx,
-        y: cy + 14 * k,
+        y: cy - 0.5 * step,
         width: bw,
         height: bh,
         label: 'RECOMMENCER',
@@ -713,25 +769,50 @@ export class GameScene extends Phaser.Scene {
         radius: 24 * k,
         depth: 85,
         shadowColor: 0xc94f3d,
+        icon: 'restart',
+        iconPosition: 'left',
         fontSize: Math.round(bh * 0.3),
       },
       () => {
         audioManager.playButton();
         this.matter.world.resume();
         this.paused = false;
+        SaveManager.clearGame();
         this.pauseOverlay?.destroy();
         this.pauseOverlay = undefined;
         this.pauseResumeBtn?.destroy();
         this.pauseRestartBtn?.destroy();
+        this.pauseSettingsBtn?.destroy();
         this.pauseMenuBtn?.destroy();
         this.scene.restart();
+      },
+    );
+    this.pauseSettingsBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy + 0.5 * step,
+        width: bw,
+        height: bh,
+        label: 'PARAMÈTRES',
+        fill: 0xfff9ec,
+        radius: 24 * k,
+        depth: 85,
+        shadowColor: 0xc94f3d,
+        icon: 'gear',
+        iconPosition: 'left',
+        fontSize: Math.round(bh * 0.28),
+      },
+      () => {
+        audioManager.playButton();
+        this.openPauseSettings();
       },
     );
     this.pauseMenuBtn = UIHelpers.makeButton(
       this,
       {
         x: cx,
-        y: cy + 124 * k,
+        y: cy + 1.5 * step,
         width: bw,
         height: bh,
         label: 'MENU',
@@ -740,10 +821,13 @@ export class GameScene extends Phaser.Scene {
         radius: 24 * k,
         depth: 85,
         shadowColor: 0x3d599e,
+        icon: 'home',
+        iconPosition: 'left',
         fontSize: Math.round(bh * 0.32),
       },
       () => {
         audioManager.playButton();
+        this.saveGameState();
         this.matter.world.resume();
         this.paused = false;
         this.scene.stop();
@@ -752,7 +836,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     // Entrée en cascade des boutons
-    for (const [i, btn] of [this.pauseResumeBtn, this.pauseRestartBtn, this.pauseMenuBtn].entries()) {
+    for (const [i, btn] of [this.pauseResumeBtn, this.pauseRestartBtn, this.pauseSettingsBtn, this.pauseMenuBtn].entries()) {
       btn.setAlpha(0).setY(btn.y + 50 * k);
       this.tweens.add({
         targets: btn,
@@ -763,6 +847,143 @@ export class GameScene extends Phaser.Scene {
         ease: 'Back.easeOut',
       });
     }
+  }
+
+  // ---------- paramètres (depuis pause) ----------
+
+  private openPauseSettings(): void {
+    if (this.settingsOverlay) return;
+    const k = this.scaleK;
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const pw = Math.min(440 * k, w * 0.88);
+    const ph = 420 * k;
+
+    const container = this.add.container(0, 0).setDepth(95);
+    this.settingsOverlay = container;
+    const dim = this.add.rectangle(cx, cy, w, h, 0x27272f, 0.55).setInteractive();
+    dim.on('pointerdown', () => this.closePauseSettings());
+    container.add(dim);
+
+    const g = this.add.graphics();
+    g.fillStyle(0x3d599e, 1);
+    g.fillRoundedRect(cx - pw / 2 + 6 * k, cy - ph / 2 + 6 * k, pw, ph, 26 * k);
+    g.fillStyle(0xfff9ec, 1);
+    g.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 26 * k);
+    g.lineStyle(6 * k, 0x27272f, 1);
+    g.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 26 * k);
+    container.add(g);
+
+    const FONT = '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif';
+    container.add(
+      this.add
+        .text(cx, cy - ph / 2 + 56 * k, 'RÉGLAGES', {
+          fontFamily: FONT,
+          fontSize: `${Math.round(38 * k)}px`,
+          color: '#27272f',
+          fontStyle: 'bold',
+        })
+        .setOrigin(0.5),
+    );
+
+    const state = this.add.graphics();
+    container.add(state);
+    const drawToggles = () => {
+      state.clear();
+      const rows: [number, string, 'volume' | 'music', boolean][] = [
+        [cy - ph / 2 + 150 * k, 'SON', 'volume', audioManager.soundEnabled],
+        [cy - ph / 2 + 260 * k, 'MUSIQUE', 'music', audioManager.musicEnabled],
+      ];
+      for (const [y, label, icon, value] of rows) {
+        state.fillStyle(0xffffff, 1);
+        state.fillRoundedRect(cx - pw / 2 + 24 * k, y - 44 * k, pw - 48 * k, 88 * k, 16 * k);
+        state.lineStyle(2.5 * k, 0x27272f, 1);
+        state.strokeRoundedRect(cx - pw / 2 + 24 * k, y - 44 * k, pw - 48 * k, 88 * k, 16 * k);
+        state.fillStyle(0xfdc33b, 1);
+        state.fillCircle(cx - pw / 2 + 76 * k, y, 28 * k);
+        state.lineStyle(2.5 * k, 0x27272f, 1);
+        state.strokeCircle(cx - pw / 2 + 76 * k, y, 28 * k);
+        UIHelpers.drawIcon(state, cx - pw / 2 + 76 * k, y, 22 * k, icon);
+        const sx = cx + pw / 2 - 140 * k;
+        state.fillStyle(value ? 0x4ade80 : 0xbdbdbd, 1);
+        state.fillRoundedRect(sx, y - 26 * k, 92 * k, 52 * k, 26 * k);
+        state.lineStyle(2.5 * k, 0x27272f, 1);
+        state.strokeRoundedRect(sx, y - 26 * k, 92 * k, 52 * k, 26 * k);
+        const px = value ? sx + 66 * k : sx + 26 * k;
+        state.fillStyle(0xffffff, 1);
+        state.fillCircle(px, y, 21 * k);
+        state.strokeCircle(px, y, 21 * k);
+        void label;
+      }
+    };
+    drawToggles();
+    const labels: [number, string][] = [
+      [cy - ph / 2 + 150 * k, 'SON'],
+      [cy - ph / 2 + 260 * k, 'MUSIQUE'],
+    ];
+    for (const [y, label] of labels) {
+      container.add(
+        this.add
+          .text(cx - pw / 2 + 118 * k, y, label, {
+            fontFamily: FONT,
+            fontSize: `${Math.round(26 * k)}px`,
+            color: '#27272f',
+            fontStyle: 'bold',
+          })
+          .setOrigin(0, 0.5),
+      );
+    }
+
+    const soundZone = this.add
+      .zone(cx, cy - ph / 2 + 150 * k, pw - 48 * k, 88 * k)
+      .setInteractive({ useHandCursor: true });
+    soundZone.on('pointerdown', () => {
+      audioManager.setSoundEnabled(!audioManager.soundEnabled);
+      audioManager.playButton();
+      drawToggles();
+    });
+    container.add(soundZone);
+    const musicZone = this.add
+      .zone(cx, cy - ph / 2 + 260 * k, pw - 48 * k, 88 * k)
+      .setInteractive({ useHandCursor: true });
+    musicZone.on('pointerdown', () => {
+      audioManager.setMusicEnabled(!audioManager.musicEnabled);
+      audioManager.playButton();
+      drawToggles();
+    });
+    container.add(musicZone);
+
+    container.setScale(0.6).setAlpha(0);
+    this.tweens.add({ targets: container, scale: 1, alpha: 1, duration: 200, ease: 'Back.easeOut' });
+
+    this.settingsCloseBtn = UIHelpers.makeButton(
+      this,
+      {
+        x: cx,
+        y: cy + ph / 2 - 60 * k,
+        width: 220 * k,
+        height: 76 * k,
+        label: 'FERMER',
+        fill: 0xffd54f,
+        radius: 20 * k,
+        depth: 96,
+        shadowColor: 0xc94f3d,
+        fontSize: Math.round(28 * k),
+      },
+      () => {
+        audioManager.playButton();
+        this.closePauseSettings();
+      },
+    );
+  }
+
+  private closePauseSettings(): void {
+    this.settingsCloseBtn?.destroy();
+    this.settingsCloseBtn = undefined;
+    this.settingsOverlay?.destroy();
+    this.settingsOverlay = undefined;
   }
 
   // ---------- fin de partie ----------
@@ -781,6 +1002,7 @@ export class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(800, () => {
       this.matter.world.pause();
+      SaveManager.clearGame();
       this.scoreManager.submit();
       SaveManager.setUnlockedTier(this.mergeManager.bestTier);
       const data: GameOverData = {

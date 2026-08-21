@@ -16,11 +16,18 @@ export class EvolutionBar {
     const margin = 14 * k;
     const slot = (w - margin * 2) / FRUITS.length;
 
+    // Diamètre affiché cible pour les tiers 1-6 : celui du tier 6 (le plus
+    // grand du groupe), pour qu'ils paraissent tous à la même taille.
+    const refDef = FRUITS[5];
+    const refScale = Math.min(0.32 * k, (slot * 0.9) / (refDef.radius * 2));
+    const refDiameter = refDef.radius * 2 * refScale;
+
     for (let i = 0; i < FRUITS.length; i++) {
       const def = FRUITS[i];
       const x = margin + slot * (i + 0.5);
-      // Taille croissante le long de l'évolution (plafonnée à la cellule)
-      const scale = Math.min(0.32 * k, (slot * 0.9) / (def.radius * 2));
+      // Taille croissante le long de l'évolution (plafonnée à la cellule),
+      // sauf pour les tiers 1-6 alignés sur la taille du tier 6
+      const scale = def.id <= 6 ? refDiameter / (def.radius * 2) : Math.min(0.32 * k, (slot * 0.9) / (def.radius * 2));
       // Fruits posés sur la même ligne : le bas repose sur la baseline
       const img = scene.add.image(x, y - def.radius * scale, `fruit_${def.id}`).setScale(scale).setDepth(8);
       this.sprites.push(img);

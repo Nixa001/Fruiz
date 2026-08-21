@@ -201,9 +201,10 @@ export class MenuScene extends Phaser.Scene {
     const k = this.k;
     const w = this.scale.width;
     const h = this.scale.height;
+    const hasSave = SaveManager.hasGameSave();
     // Natte ancrée en bas, au-dessus de la bande wax
     const matW = Math.min(w, 460 * k);
-    const matH = 272 * k;
+    const matH = (hasSave ? 272 + 78 : 272) * k;
     const matTop = h - 26 * k - matH - 100 * k;
     const mat = this.add.graphics().setDepth(2);
     UIHelpers.drawSeckoMat(mat, w / 2 - matW / 2, matTop, matW, matH);
@@ -219,7 +220,7 @@ export class MenuScene extends Phaser.Scene {
         y: yJouer,
         width: bw,
         height: bh,
-        label: 'JOUER',
+        label: hasSave ? 'CONTINUER' : 'JOUER',
         fill: 0xfdc33b,
         radius: 20 * k,
         shadowColor: 0xffc53d,
@@ -230,7 +231,7 @@ export class MenuScene extends Phaser.Scene {
       () => {
         audioManager.playButton();
         this.scene.stop();
-        this.scene.start('Game');
+        this.scene.start('Game', hasSave ? { resume: true } : undefined);
       },
     );
     this.tweens.add({
@@ -242,9 +243,35 @@ export class MenuScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     });
 
+    let newGameBtn: Phaser.GameObjects.Container | undefined;
+    if (hasSave) {
+      newGameBtn = UIHelpers.makeButton(
+        this,
+        {
+          x: w / 2,
+          y: yJouer + bh / 2 + 24 * k + 68 * k / 2,
+          width: bw,
+          height: 68 * k,
+          label: 'NOUVELLE PARTIE',
+          fill: 0xfff9ec,
+          radius: 16 * k,
+          shadowColor: 0xc94f3d,
+          icon: 'restart',
+          iconPosition: 'left',
+          fontSize: Math.round(68 * k * 0.3),
+        },
+        () => {
+          audioManager.playButton();
+          SaveManager.clearGame();
+          this.scene.stop();
+          this.scene.start('Game');
+        },
+      );
+    }
+
     const b2w = (bw - 16 * k) / 2;
     const b2h = 86 * k;
-    const y2 = yJouer + bh / 2 + 24 * k + b2h / 2;
+    const y2 = yJouer + bh / 2 + (hasSave ? 24 * k + 68 * k + 24 * k : 24 * k) + b2h / 2;
     const fruitsBtn = UIHelpers.makeButton(
       this,
       {
@@ -294,6 +321,17 @@ export class MenuScene extends Phaser.Scene {
         alpha: 1,
         y: btn.y - 40 * k,
         delay: 150 + i * 90,
+        duration: 260,
+        ease: 'Back.easeOut',
+      });
+    }
+    if (newGameBtn) {
+      newGameBtn.setAlpha(0).setY(newGameBtn.y + 30 * k);
+      this.tweens.add({
+        targets: newGameBtn,
+        alpha: 1,
+        y: newGameBtn.y - 30 * k,
+        delay: 220,
         duration: 260,
         ease: 'Back.easeOut',
       });

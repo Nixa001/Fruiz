@@ -7,7 +7,23 @@ const KEYS = {
   soundEnabled: 'merge_fruits_sound',
   musicEnabled: 'merge_fruits_music',
   unlockedTier: 'merge_fruits_unlocked',
+  game: 'merge_fruits_game',
 } as const;
+
+/** Fruit sauvegardé : position normalisée dans la calebasse ([-1,1] x, [0,1] y). */
+export interface SavedFruit {
+  tier: number;
+  nx: number;
+  ny: number;
+}
+
+export interface GameSaveState {
+  score: number;
+  bestTier: number;
+  currentTier: number;
+  nextTier: number;
+  fruits: SavedFruit[];
+}
 
 export class SaveManager {
   private static bestScore = -1;
@@ -80,5 +96,32 @@ export class SaveManager {
     if (tier > cur) {
       SaveManager.storage()?.setItem(KEYS.unlockedTier, String(tier));
     }
+  }
+
+  /** Partie en cours sauvegardée (reprise depuis le menu principal). */
+  static hasGameSave(): boolean {
+    return !!SaveManager.storage()?.getItem(KEYS.game);
+  }
+
+  static saveGame(state: GameSaveState): void {
+    try {
+      SaveManager.storage()?.setItem(KEYS.game, JSON.stringify(state));
+    } catch {
+      // quota dépassé / stockage indisponible : tant pis, pas de reprise
+    }
+  }
+
+  static loadGame(): GameSaveState | null {
+    const raw = SaveManager.storage()?.getItem(KEYS.game);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as GameSaveState;
+    } catch {
+      return null;
+    }
+  }
+
+  static clearGame(): void {
+    SaveManager.storage()?.removeItem(KEYS.game);
   }
 }

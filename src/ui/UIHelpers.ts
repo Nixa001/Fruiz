@@ -14,7 +14,7 @@ export interface ButtonOptions {
   /** Ombre portée "brutale" (décalage plein, pas de flou). */
   shadowColor?: number;
   /** Icône optionnelle (dessinée en Graphics). */
-  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music';
+  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home';
   iconPosition?: 'left' | 'top';
 }
 
@@ -118,9 +118,24 @@ export class UIHelpers {
     x: number,
     y: number,
     s: number,
-    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music',
+    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home',
   ): void {
-    if (type === 'play') {
+    if (type === 'restart') {
+      g.lineStyle(s * 0.2, 0x27272f, 1);
+      g.beginPath();
+      g.arc(x, y, s * 0.55, -2.4, 2.0, false);
+      g.strokePath();
+      g.fillStyle(0x27272f, 1);
+      const ax = x + Math.cos(2.0) * s * 0.55;
+      const ay = y + Math.sin(2.0) * s * 0.55;
+      g.fillTriangle(ax - s * 0.32, ay - s * 0.05, ax + s * 0.1, ay - s * 0.3, ax + s * 0.14, ay + s * 0.22);
+    } else if (type === 'home') {
+      g.fillStyle(0x27272f, 1);
+      g.fillTriangle(x - s * 0.62, y - s * 0.02, x + s * 0.62, y - s * 0.02, x, y - s * 0.68);
+      g.fillRect(x - s * 0.42, y - s * 0.02, s * 0.84, s * 0.62);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(x - s * 0.16, y + s * 0.08, s * 0.32, s * 0.52);
+    } else if (type === 'play') {
       g.fillStyle(0x27272f, 1);
       g.fillTriangle(x - s * 0.45, y - s * 0.6, x - s * 0.45, y + s * 0.6, x + s * 0.7, y);
     } else if (type === 'pause') {
