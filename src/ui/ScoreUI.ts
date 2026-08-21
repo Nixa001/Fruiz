@@ -11,10 +11,10 @@ export class ScoreUI {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     const k = scene.scale.height / 1280;
-    const x = 16 * k;
-    const y = 40 * k;
+    const y = 54 * k;
     const cardW = Math.min(235 * k, scene.scale.width * 0.34);
     const cardH = 100 * k;
+    const x = scene.scale.width / 2 - cardW / 2;
     const splitX = cardW * 0.62;
 
     const g = scene.add.graphics().setDepth(20);

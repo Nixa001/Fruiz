@@ -28,6 +28,8 @@ export class MergeManager {
   bestTier = 3;
 
   private pending: PendingMerge[] = [];
+  /** Une fusion à la fois : le fruit résultant doit être entièrement apparu avant d'en lancer une autre. */
+  private busy = false;
 
   private scanTimer!: Phaser.Time.TimerEvent;
 
@@ -116,13 +118,18 @@ export class MergeManager {
     }
   }
 
-  /** À appeler chaque frame : exécute les fusions détectées. */
+  /**
+   * À appeler chaque frame : exécute une fusion à la fois.
+   * Tant que le fruit résultant de la précédente n'est pas entièrement apparu,
+   * les fusions détectées restent en file (pas d'enchaînement instantané).
+   */
   update(): void {
-    if (this.pending.length === 0) return;
-    const jobs = this.pending.splice(0);
-    for (const { a, b } of jobs) {
+    if (this.busy) return;
+    while (this.pending.length > 0) {
+      const { a, b } = this.pending.shift()!;
       if (a.isRemoved || b.isRemoved || a.isMerging || b.isMerging) continue;
       this.doMerge(a, b);
+      return;
     }
   }
 
@@ -133,6 +140,7 @@ export class MergeManager {
     const y = (a.y + b.y) / 2;
     const color = a.def.color;
 
+    this.busy = true;
     a.isMerging = true;
     b.isMerging = true;
     a.removeBody();
@@ -164,6 +172,10 @@ export class MergeManager {
         this.particles.comboBurst(x, y, 8);
         this.screens.flash(0.5, 200);
         this.audio.playMerge(tier + 2);
+        // Pas de nouveau fruit à voir apparaître : file libérée après le flash/burst
+        scene.time.delayedCall(260, () => {
+          this.busy = false;
+        });
       } else {
         const fruit = scene.spawnFruit(tier + 1, x, y);
         // Petit pop vers le haut : la fusion "pousse" le nouveau fruit
@@ -171,6 +183,10 @@ export class MergeManager {
         FruitEffects.spawnPop(scene, fruit);
         fruit.express(FruitExpression.CELEBRATING, 1400);
         this.score.addMerge(tier + 1, comboN, x, y);
+        // File libérée seulement une fois le fruit fusionné entièrement apparu (fin du pop)
+        scene.time.delayedCall(360, () => {
+          this.busy = false;
+        });
       }
       if (comboN >= 2) {
         this.popup.show(comboN);

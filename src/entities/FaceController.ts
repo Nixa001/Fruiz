@@ -102,7 +102,7 @@ export class FaceController {
     }
     this.root.add(cheeks);
 
-    this.setExpression(FruitExpression.IDLE);
+    this.setExpression(FruitExpression.IDLE, true);
 
     // Clignements et regards furtifs aléatoires (auto-reprogrammés)
     this.blinkEvent = scene.time.delayedCall(2000, () => this.scheduleBlink());
@@ -121,9 +121,15 @@ export class FaceController {
     this.glanceEvent = this.scene.time.delayedCall(Phaser.Math.Between(2500, 5500), () => this.scheduleGlance());
   }
 
-  /** Change d'expression (redessine yeux + bouche). Sans effet si identique. */
-  setExpression(expr: FruitExpression): void {
-    if (this.expression === expr) return;
+  /**
+   * Change d'expression (redessine yeux + bouche). Sans effet si identique,
+   * sauf `force` (nécessaire au premier appel du constructeur : `expression`
+   * vaut déjà IDLE par défaut, donc setExpression(IDLE) serait autrement un
+   * no-op et le fruit resterait sans visage tant qu'aucun événement — impact,
+   * fusion... — ne change son expression pour de bon).
+   */
+  setExpression(expr: FruitExpression, force = false): void {
+    if (!force && this.expression === expr) return;
     this.expression = expr;
     const spec = EXPRESSIONS[expr];
     this.drawEye(this.whiteL, this.pupilL, this.specialL, spec);

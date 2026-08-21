@@ -568,8 +568,8 @@ export class GameScene extends Phaser.Scene {
     UIHelpers.makeButton(
       this,
       {
-        x: this.scale.width / 2,
-        y: 90 * k,
+        x: 16 * k + 46 * k,
+        y: 104 * k,
         width: 92 * k,
         height: 100 * k,
         label: '❚❚',
