@@ -18,7 +18,7 @@ const DEFAULT: FaceConfig = { dx: 0, dy: 0, scale: 1, rotation: 0 };
  */
 const FRUIT_FACE_CONFIG: Record<number, Partial<FaceConfig>> = {
   1: { dy: 0.1 }, // Jujube (pomme rouge) : tige/feuille en haut
-  2: { dy: -0.02 }, // Mûre : quasi centré
+  2: { dy: 0.1, scale: 0.8 }, // Raisin : centré sur la masse (évite tige/feuille en haut)
   3: { dy: 0.05 }, // Citron vert : reflet en haut, visage un peu plus bas
   4: { dy: 0.12, scale: 0.95 }, // Goyave : forme poire, plus étroit en haut
   5: { dy: 0.06 }, // Pêche : évite le creux du pédoncule en haut

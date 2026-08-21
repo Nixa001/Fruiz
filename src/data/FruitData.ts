@@ -10,7 +10,7 @@ import { FruitDefinition } from '../types/GameTypes';
  */
 export const FRUITS: FruitDefinition[] = [
   { id: 1, name: 'Jujube', radius: 25, color: 0xc02000, colorDark: 0x801500, score: 10, shape: 'circle', spawnWeight: 30 },
-  { id: 2, name: 'Mûre', radius: 29, color: 0x2d1b4e, colorDark: 0x1c1132, score: 20, shape: 'circle', spawnWeight: 26 },
+  { id: 2, name: 'Raisin', radius: 29, color: 0x2d1b4e, colorDark: 0x1c1132, score: 20, shape: 'circle', spawnWeight: 26 },
   { id: 3, name: 'Citron', radius: 34, color: 0xf0c010, colorDark: 0xa88500, score: 30, shape: 'circle', spawnWeight: 20 },
   { id: 4, name: 'Goyave', radius: 40, color: 0x90b030, colorDark: 0x60751f, score: 40, shape: 'circle', spawnWeight: 6 },
   { id: 5, name: 'Pêche', radius: 43, color: 0xffb300, colorDark: 0xc98400, score: 50, shape: 'circle', spawnWeight: 0 },

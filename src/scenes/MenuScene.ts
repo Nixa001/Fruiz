@@ -51,7 +51,7 @@ export class MenuScene extends Phaser.Scene {
       this,
       {
         x: w - 58 * k,
-        y: 62 * k,
+        y: 118 * k,
         width: 80 * k,
         height: 80 * k,
         label: '?',

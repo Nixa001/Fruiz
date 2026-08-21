@@ -200,34 +200,55 @@ export class MergeManager {
     });
   }
 
-  /** Célébration "DÉBLOQUÉ !" simple : petite carte, fruit, nom, auto-fermeture. */
+  /** Célébration "DÉBLOQUÉ !" simple : petite carte, fruit, nom, auto-fermeture.
+   * Pomme cannelle (tier 7) : célébration spéciale, plus généreuse. */
   private unlockCelebration(x: number, y: number, tier: number): void {
     const scene = this.scene;
     const k = scene.scale.height / 1280;
     const def = getFruit(tier);
     const cx = scene.scale.width / 2;
     const cy = scene.scale.height / 2;
+    const isFavorite = tier === 7;
+    const isEpic = tier === 11 || tier === 12;
     this.screens.flash(0.55, 220);
-    this.screens.shake(0.025, 350);
+    this.screens.shake(isFavorite ? 0.035 : 0.025, isFavorite ? 500 : 350);
+    if (isEpic) {
+      // Ralenti dramatique : le monde physique se fige un instant, zoom léger
+      const engine = scene.matter.world.engine;
+      engine.timing.timeScale = 0.25;
+      scene.cameras.main.zoomTo(1.08, 250, 'Sine.easeOut');
+      scene.time.delayedCall(650, () => {
+        engine.timing.timeScale = 1;
+        scene.cameras.main.zoomTo(1, 250, 'Sine.easeIn');
+      });
+    }
     this.audio.playUnlock();
-    this.particles.radialConfetti(cx, cy - 30 * k, 14);
-    this.particles.comboBurst(x, y, 6);
+    if (isFavorite) this.audio.playUnlock();
+    this.particles.radialConfetti(
+      cx,
+      cy - 30 * k,
+      isFavorite ? 28 : 14,
+      isFavorite ? [0xd0e040, 0x93a02c, 0xfff176, 0xffffff] : undefined,
+    );
+    this.particles.comboBurst(x, y, isFavorite ? 10 : 6);
 
+    const pw = isFavorite ? 380 : 340;
+    const ph = isFavorite ? 220 : 200;
     const panel = scene.add.container(cx, cy).setDepth(60).setScale(0.4);
     const g = scene.add.graphics();
-    g.fillStyle(0x3d599e, 1);
-    g.fillRoundedRect(-170 * k + 6 * k, -100 * k + 6 * k, 340 * k, 200 * k, 22 * k);
+    g.fillStyle(isFavorite ? 0x93a02c : 0x3d599e, 1);
+    g.fillRoundedRect(-pw / 2 * k + 6 * k, -ph / 2 * k + 6 * k, pw * k, ph * k, 22 * k);
     g.fillStyle(0xfff9ec, 1);
-    g.fillRoundedRect(-170 * k, -100 * k, 340 * k, 200 * k, 22 * k);
+    g.fillRoundedRect(-pw / 2 * k, -ph / 2 * k, pw * k, ph * k, 22 * k);
     g.lineStyle(4 * k, 0x27272f, 1);
-    g.strokeRoundedRect(-170 * k, -100 * k, 340 * k, 200 * k, 22 * k);
+    g.strokeRoundedRect(-pw / 2 * k, -ph / 2 * k, pw * k, ph * k, 22 * k);
     panel.add(g);
 
-    panel.add(scene.add.image(0, 52 * k, `fruit_${def.id}`).setScale(k * 0.42));
+    panel.add(scene.add.image(0, 52 * k, `fruit_${def.id}`).setScale(k * (isFavorite ? 0.72 : 0.6)));
     const title = scene.add
-      .text(0, -52 * k, 'DÉBLOQUÉ !', {
+      .text(0, -52 * k, isFavorite ? 'TON PRÉFÉRÉ !' : 'DÉBLOQUÉ !', {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
-        fontSize: `${Math.round(40 * k)}px`,
+        fontSize: `${Math.round((isFavorite ? 34 : 40) * k)}px`,
         color: '#c94f3d',
         fontStyle: 'bold',
       })
@@ -252,7 +273,7 @@ export class MergeManager {
     scene.tweens.add({
       targets: panel,
       alpha: 0,
-      delay: 1600,
+      delay: isFavorite ? 2100 : 1600,
       duration: 300,
       onComplete: () => panel.destroy(),
     });

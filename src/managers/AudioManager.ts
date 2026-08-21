@@ -143,19 +143,21 @@ export class AudioManager {
 
   // ---------- musique ----------
 
-  /** Musique de fond : fichier mp3 (boucle) si dispo, sinon kalimba synthétique. */
+  /** Musique de fond : fichier mp3 (boucle) si dispo, sinon kalimba synthétique.
+   * Garde-fou anti-doublon : `this.music` est la seule source de vérité (pas de
+   * relecture via scene.sound.get(), qui pouvait renvoyer une instance orpheline
+   * lors d'un appel concurrent — ex. tap sur JOUER qui déclenche à la fois le
+   * pointerdown du menu et le create() de GameScene). */
   startMusic(): void {
     if (!this.musicEnabled) return;
-    // Fichier externe : le son appartient à la scène active, relancé si détruit
+    if (this.music?.isPlaying) return;
+    // Fichier externe : le son appartient au SoundManager global (partagé
+    // entre scènes), on réutilise l'instance existante si elle existe déjà
     if (this.scene && this.scene.cache.audio.exists('Baobab_Morning')) {
-      const key = 'Baobab_Morning';
-      const existing = this.scene.sound.get(key);
-      if (existing && existing.isPlaying) {
-        this.music = existing;
-        return;
-      }
       this.stopSynthMusic();
-      this.music = this.scene.sound.add(key, { loop: true, volume: 0.35 });
+      if (!this.music) {
+        this.music = this.scene.sound.add('Baobab_Morning', { loop: true, volume: 0.35 });
+      }
       this.music.play();
       return;
     }
@@ -165,7 +167,6 @@ export class AudioManager {
   stopMusic(): void {
     this.stopSynthMusic();
     this.music?.stop();
-    this.music = null;
   }
 
   /** Boucle kalimba douce : mélodie pentatonique + basse (fallback sans fichier). */
@@ -207,6 +208,8 @@ export class AudioManager {
 
   destroy(): void {
     this.stopMusic();
+    this.music?.destroy();
+    this.music = null;
     this.ctx?.close().catch(() => undefined);
     this.ctx = null;
   }

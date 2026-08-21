@@ -54,8 +54,6 @@ export class GameScene extends Phaser.Scene {
   private pointerDown = false;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
-  /** Debug (DEV only) : touches 1-9/0/-/= pour lâcher un tier précis (1-12). */
-  private debugTierKeys: { tier: number; key: Phaser.Input.Keyboard.Key }[] = [];
   /** Accumulateur du balayage anti-coincement (fruits qui flottent). */
   private unstickAccum = 0;
   /** Fruit en chute dont on attend la mi-parcours avant de révéler le NEXT. */
@@ -217,12 +215,6 @@ export class GameScene extends Phaser.Scene {
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.space) || Phaser.Input.Keyboard.JustDown(this.keys.up)) {
         this.dropCurrent();
-      }
-    }
-    // Debug (DEV only) : lâcher un tier précis au clavier
-    for (const { tier, key } of this.debugTierKeys) {
-      if (Phaser.Input.Keyboard.JustDown(key)) {
-        this.spawnFruit(tier, this.previewX, this.previewY);
       }
     }
     for (const fruit of this.fruits) {
@@ -574,11 +566,6 @@ export class GameScene extends Phaser.Scene {
     if (kb) {
       this.keys = kb.createCursorKeys();
       this.escKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      if (import.meta.env.DEV) {
-        const KC = Phaser.Input.Keyboard.KeyCodes;
-        const codes = [KC.ONE, KC.TWO, KC.THREE, KC.FOUR, KC.FIVE, KC.SIX, KC.SEVEN, KC.EIGHT, KC.NINE, KC.ZERO, KC.MINUS, KC.PLUS];
-        this.debugTierKeys = codes.map((code, i) => ({ tier: i + 1, key: kb.addKey(code) }));
-      }
     }
   }
 
@@ -621,7 +608,7 @@ export class GameScene extends Phaser.Scene {
       this,
       {
         x: 16 * k + 46 * k,
-        y: 104 * k,
+        y: 118 * k,
         width: 92 * k,
         height: 100 * k,
         label: '❚❚',
