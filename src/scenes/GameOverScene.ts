@@ -4,6 +4,8 @@ import { UIHelpers } from '../ui/UIHelpers';
 import { audioManager } from '../managers/AudioManager';
 import { ParticleManager } from '../managers/ParticleManager';
 import { ScreenEffects } from '../effects/ScreenEffects';
+import { SaveManager } from '../managers/SaveManager';
+import { FRUITS } from '../data/FruitData';
 
 /**
  * Écran de game over façon "menus & panels" :
@@ -52,7 +54,7 @@ export class GameOverScene extends Phaser.Scene {
     });
 
     const pw = Math.min(w * 0.9, 620 * k);
-    const ph = Math.min(h * 0.76, 720 * k);
+    const ph = Math.min(h * 0.76, 800 * k);
     const P = ph / 2;
     const g = this.add.graphics();
     g.fillStyle(0x3d599e, 1);
@@ -200,6 +202,107 @@ export class GameOverScene extends Phaser.Scene {
     pillC.setScale(0).setAlpha(0);
     this.tweens.add({ targets: pillC, scale: 1, alpha: 1, delay: 400, duration: 300, ease: 'Back.easeOut' });
 
+    // Accroche "une dernière partie" : soit la distance au record, soit le
+    // prochain fruit à débloquer (jamais les deux, pas de place) — pousse à relancer.
+    const hookY = pillY + 68 * k;
+    if (!newBest && data.best > 0) {
+      // Carte "presque record" : bandeau rouge + barre de progression animée
+      // (score actuel vs record) — plus lisible et plus "jeu" qu'un texte seul.
+      const missing = data.best - data.score;
+      const ratio = Phaser.Math.Clamp(data.score / data.best, 0, 1);
+      const cardW2 = Math.min(300 * k, pw * 0.66);
+      const cardH2 = 76 * k;
+      const hookC = this.add.container(0, hookY);
+
+      const shadow2 = this.add.graphics();
+      shadow2.fillStyle(0x27272f, 1);
+      shadow2.fillRoundedRect(-cardW2 / 2 + 4 * k, -cardH2 / 2 + 4 * k, cardW2, cardH2, 16 * k);
+      hookC.add(shadow2);
+      const card2 = this.add.graphics();
+      card2.fillStyle(0xba1a1a, 1);
+      card2.fillRoundedRect(-cardW2 / 2, -cardH2 / 2, cardW2, cardH2, 16 * k);
+      card2.lineStyle(3 * k, 0x27272f, 1);
+      card2.strokeRoundedRect(-cardW2 / 2, -cardH2 / 2, cardW2, cardH2, 16 * k);
+      hookC.add(card2);
+
+      hookC.add(
+        this.add
+          .text(0, -cardH2 / 2 + 20 * k, `PRESQUE ! -${missing} PTS`, {
+            fontFamily: FONT,
+            fontSize: `${Math.round(19 * k)}px`,
+            color: '#ffffff',
+            fontStyle: 'bold',
+          })
+          .setOrigin(0.5),
+      );
+
+      // Barre de progression (score / record)
+      const barW2 = cardW2 - 32 * k;
+      const barH2 = 14 * k;
+      const barX2 = -barW2 / 2;
+      const barY2 = cardH2 / 2 - 24 * k;
+      const track2 = this.add.graphics();
+      track2.fillStyle(0x7a1414, 1);
+      track2.fillRoundedRect(barX2, barY2, barW2, barH2, barH2 / 2);
+      hookC.add(track2);
+      const fill2 = this.add.graphics();
+      hookC.add(fill2);
+      panel.add(hookC);
+      hookC.setScale(0).setAlpha(0);
+      this.tweens.add({ targets: hookC, scale: 1, alpha: 1, delay: 600, duration: 300, ease: 'Back.easeOut' });
+      this.tweens.addCounter({
+        from: 0,
+        to: ratio,
+        duration: 900,
+        delay: 750,
+        ease: 'Cubic.easeOut',
+        onUpdate: (tween) => {
+          const v = tween.getValue() ?? 0;
+          fill2.clear();
+          fill2.fillStyle(0xfdc33b, 1);
+          fill2.fillRoundedRect(barX2, barY2, Math.max(barH2, barW2 * v), barH2, barH2 / 2);
+        },
+      });
+      this.tweens.add({
+        targets: hookC,
+        scale: 1.04,
+        duration: 550,
+        delay: 1700,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      const accountTier = SaveManager.getUnlockedTier();
+      const nextFruit = FRUITS.find((f) => f.id === accountTier + 1);
+      if (nextFruit) {
+        const hookC = this.add.container(0, hookY);
+        const badge = this.add.graphics();
+        badge.fillStyle(nextFruit.color, 1);
+        badge.fillCircle(-90 * k, 0, 26 * k);
+        badge.lineStyle(3 * k, 0x27272f, 1);
+        badge.strokeCircle(-90 * k, 0, 26 * k);
+        hookC.add(badge);
+        const fscale = (26 * k * 0.72) / (nextFruit.radius * 2);
+        hookC.add(this.add.image(-90 * k, 0, `fruit_${nextFruit.id}`).setScale(fscale));
+        hookC.add(
+          this.add
+            .text(-50 * k, 0, `Prochain :\n${nextFruit.name}`, {
+              fontFamily: FONT,
+              fontSize: `${Math.round(19 * k)}px`,
+              color: '#58413e',
+              fontStyle: 'bold',
+              align: 'left',
+              lineSpacing: 2 * k,
+            })
+            .setOrigin(0, 0.5),
+        );
+        panel.add(hookC);
+        hookC.setScale(0).setAlpha(0);
+        this.tweens.add({ targets: hookC, scale: 1, alpha: 1, delay: 600, duration: 300, ease: 'Back.easeOut' });
+      }
+    }
+
     // Gros boutons en bas de la carte
     const bw = Math.min(430 * k, w * 0.82);
     const bh = 88 * k;
@@ -296,8 +399,16 @@ export class GameOverScene extends Phaser.Scene {
     });
   }
 
+  /** Pluie décorative : seulement des fruits déjà débloqués (jamais un
+   * aperçu d'un fruit encore inconnu du joueur). */
   private spawnFruitRain(k: number, w: number, h: number): void {
-    const textures = ['fruit_2', 'fruit_4', 'fruit_6', 'fruit_8', 'fruit_10'];
+    const unlockedTier = SaveManager.getUnlockedTier();
+    const pool = FRUITS.filter((f) => f.id <= unlockedTier).map((f) => `fruit_${f.id}`);
+    const count = Math.min(10, pool.length);
+    const textures: string[] = [];
+    for (let i = 0; i < count; i++) {
+      textures.push(pool[Math.floor((i * pool.length) / count)]);
+    }
     for (const tex of textures) {
       const img = this.add.image(0, 0, tex).setDepth(20).setScale(k * 0.5).setAlpha(0.85);
       this.dropFruit(img, w, h);
