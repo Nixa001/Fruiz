@@ -71,6 +71,14 @@ export class Fruit extends Phaser.GameObjects.Container {
   override readonly body: MatterBody;
   readonly radiusScale: number;
   readonly physicsRadius: number;
+  /**
+   * Portée réelle du hull (distance max origine → sommet) pour les tests de
+   * proximité (fusions manquées). Diffère de `physicsRadius` quand le hull
+   * n'est pas circulaire : ex. le citron a des « épaules » qui dépassent de
+   * ~27% son `def.radius` — une distance basée sur `physicsRadius` sous-estime
+   * alors le contact réel et le filet de sécurité rate la fusion.
+   */
+  readonly mergeReach: number;
   private readonly hullPoints: MatterJS.Vector[] | null;
   /** En cours de fusion : ignore les nouvelles collisions. */
   isMerging = false;
@@ -110,6 +118,9 @@ export class Fruit extends Phaser.GameObjects.Container {
     const hull = FRUIT_HULLS[tier];
     const bodyScale = opts.radiusScale * collisionScale;
     this.hullPoints = hull ? hull.map(([hx, hy]) => ({ x: hx * bodyScale, y: hy * bodyScale })) : null;
+    this.mergeReach = this.hullPoints
+      ? Math.max(...this.hullPoints.map((p) => Math.hypot(p.x, p.y)))
+      : this.physicsRadius;
     const body =
       this.hullPoints &&
       Matter.Bodies.fromVertices(x, y, [this.hullPoints], bodyOptions);

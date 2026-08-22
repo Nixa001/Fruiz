@@ -109,7 +109,7 @@ export class MergeManager {
         if (a.def.id !== b.def.id) continue;
         const dx = a.x - b.x;
         const dy = a.y - b.y;
-        const minDist = (a.physicsRadius + b.physicsRadius) * 1.02;
+        const minDist = (a.mergeReach + b.mergeReach) * 1.02;
         if (dx * dx + dy * dy < minDist * minDist) {
           if (!this.pending.some((p) => p.a === a || p.b === a || p.a === b || p.b === b)) {
             this.pending.push({ a, b });
