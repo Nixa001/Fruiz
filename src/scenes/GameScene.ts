@@ -685,12 +685,14 @@ export class GameScene extends Phaser.Scene {
     const dim = this.add.rectangle(cx, cy, w, h, 0x27272f, 0.5).setInteractive();
     overlay.add(dim);
 
-    // Panneau crème avec ombre indigo
+    // Panneau crème avec double ombre décalée (indigo puis foncée)
     const pw = Math.min(480 * k, w * 0.94);
     const ph = 700 * k;
     const g = this.add.graphics();
     g.fillStyle(0x3d599e, 1);
-    g.fillRoundedRect(cx - pw / 2 + 7 * k, cy - ph / 2 + 7 * k, pw, ph, 30 * k);
+    g.fillRoundedRect(cx - pw / 2 + 9 * k, cy - ph / 2 + 12 * k, pw, ph, 30 * k);
+    g.fillStyle(0x27272f, 1);
+    g.fillRoundedRect(cx - pw / 2 + 4 * k, cy - ph / 2 + 5 * k, pw, ph, 30 * k);
     g.fillStyle(0xfff9ec, 1);
     g.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 30 * k);
     g.lineStyle(6 * k, 0x27272f, 1);
@@ -743,6 +745,14 @@ export class GameScene extends Phaser.Scene {
     const bw = Math.min(380 * k, w * 0.78);
     const bh = 84 * k;
     const step = 96 * k;
+
+    // Halo pulsant derrière REPRENDRE (action principale, attire l'œil)
+    const halo = this.add.graphics();
+    halo.fillStyle(0xc8f36b, 0.4);
+    halo.fillRoundedRect(cx - bw / 2 - 10 * k, cy - 1.5 * step - bh / 2 - 10 * k, bw + 20 * k, bh + 20 * k, 30 * k);
+    overlay.add(halo);
+    this.tweens.add({ targets: halo, alpha: 0.1, scale: 1.04, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
     this.pauseResumeBtn = UIHelpers.makeButton(
       this,
       {
@@ -757,6 +767,7 @@ export class GameScene extends Phaser.Scene {
         depth: 85,
         shadowColor: 0x1b5e20,
         icon: 'play',
+        iconColor: 0xffffff,
         iconPosition: 'left',
       },
       () => {
@@ -802,11 +813,13 @@ export class GameScene extends Phaser.Scene {
         width: bw,
         height: bh,
         label: 'PARAMÈTRES',
-        fill: 0xfff9ec,
+        fill: 0x3d599e,
+        textColor: '#ffffff',
         radius: 24 * k,
         depth: 85,
-        shadowColor: 0xc94f3d,
-        icon: 'gear',
+        shadowColor: 0x27272f,
+        icon: 'bolt',
+        iconColor: 0xffffff,
         iconPosition: 'left',
         fontSize: Math.round(bh * 0.28),
       },
@@ -829,6 +842,7 @@ export class GameScene extends Phaser.Scene {
         depth: 85,
         shadowColor: 0x3d599e,
         icon: 'home',
+        iconColor: 0xffffff,
         iconPosition: 'left',
         fontSize: Math.round(bh * 0.32),
       },
@@ -1007,7 +1021,8 @@ export class GameScene extends Phaser.Scene {
     audioManager.playGameOver();
     this.particleManager.gameOverConfetti();
 
-    this.time.delayedCall(800, () => {
+    // Délai allongé : laisse le temps au dernier popup COMBO d'être vu avant la transition
+    this.time.delayedCall(1100, () => {
       this.matter.world.pause();
       SaveManager.clearGame();
       this.scoreManager.submit();

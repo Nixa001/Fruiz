@@ -55,8 +55,8 @@ export class ComboPopup {
     this.scene.tweens.add({
       targets: this.container,
       alpha: 0,
-      delay: 550,
-      duration: 320,
+      delay: 1400,
+      duration: 450,
       ease: 'Sine.easeIn',
       onComplete: () => {
         this.container?.destroy();

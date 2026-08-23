@@ -7,7 +7,7 @@ import { FRUIT_HULLS } from '../data/FruitHulls';
 import { getFaceConfig } from '../data/FruitFaces';
 
 /** Debug : superpose le contour de collision Matter réel sur chaque fruit. */
-const SHOW_COLLISION_CIRCLES = true;
+const SHOW_COLLISION_CIRCLES = false;
 
 /** Boost visuel (sprite uniquement, sans toucher au corps physique) :
  * +10% tiers 1-5, +5% à partir de l'Orange (tier 6). */

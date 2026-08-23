@@ -1,5 +1,36 @@
 import Phaser from 'phaser';
 
+export type IconType =
+  | 'play'
+  | 'pause'
+  | 'leaf'
+  | 'fruit'
+  | 'gear'
+  | 'lock'
+  | 'volume'
+  | 'music'
+  | 'restart'
+  | 'home'
+  | 'heart'
+  | 'trophy'
+  | 'bolt'
+  | 'chart'
+  | 'share';
+
+/** Icônes disposant d'un vrai PNG (src/assets/icons/) : préférées aux
+ * silhouettes Graphics dessinées à la main quand la texture est chargée. */
+const ICON_TEXTURES: Partial<Record<IconType, string>> = {
+  play: 'icon_play',
+  pause: 'icon_pause',
+  home: 'icon_house',
+  heart: 'icon_heart',
+  trophy: 'icon_trophy',
+  bolt: 'icon_bolt',
+  chart: 'icon_chart-column-big',
+  share: 'icon_share-2',
+  restart: 'icon_rotate-ccw',
+};
+
 export interface ButtonOptions {
   x: number;
   y: number;
@@ -13,11 +44,13 @@ export interface ButtonOptions {
   depth?: number;
   /** Ombre portée "brutale" (décalage plein, pas de flou). */
   shadowColor?: number;
-  /** Icône optionnelle (dessinée en Graphics). */
-  icon?: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home' | 'heart';
+  /** Icône optionnelle (PNG si dispo, sinon silhouette Graphics dessinée à la main). */
+  icon?: IconType;
   iconPosition?: 'left' | 'top';
   /** Recolore l'icône gear (contraste sur fond coloré). */
   iconColor?: number;
+  /** Multiplicateur de taille de l'icône (défaut 1). */
+  iconScale?: number;
 }
 
 /** Helpers UI cartoon partagés entre les scènes. */
@@ -79,15 +112,14 @@ export class UIHelpers {
     const iconPos = opts.iconPosition ?? 'left';
     let textY = 2;
     if (opts.icon) {
-      const ig = scene.add.graphics();
+      const iconScale = opts.iconScale ?? 1;
       if (iconPos === 'left') {
         const ix = label ? -width / 2 + height * 0.62 : 0;
-        UIHelpers.drawIcon(ig, ix, 0, height * 0.28, opts.icon, opts.iconColor);
+        container.add(UIHelpers.addIcon(scene, ix, 0, height * 0.36 * iconScale, opts.icon, opts.iconColor));
       } else {
-        UIHelpers.drawIcon(ig, 0, -height * 0.2, height * 0.26, opts.icon, opts.iconColor);
-        textY = height * 0.16;
+        container.add(UIHelpers.addIcon(scene, 0, -height * 0.22, height * 0.32 * iconScale, opts.icon, opts.iconColor));
+        textY = height * 0.18;
       }
-      container.add(ig);
     }
 
     const text = scene.add
@@ -114,16 +146,94 @@ export class UIHelpers {
     return container;
   }
 
+  /** Icône : PNG réel (src/assets/icons/) recoloré via setTintFill si chargé,
+   * sinon silhouette Graphics dessinée à la main (fallback). */
+  static addIcon(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    size: number,
+    type: IconType,
+    color?: number,
+  ): Phaser.GameObjects.GameObject {
+    const texKey = ICON_TEXTURES[type];
+    if (texKey && scene.textures.exists(texKey)) {
+      const img = scene.add.image(x, y, texKey).setDisplaySize(size * 2.1, size * 2.1);
+      if (color !== undefined) img.setTintFill(color);
+      return img;
+    }
+    const g = scene.add.graphics();
+    UIHelpers.drawIcon(g, x, y, size, type, color);
+    return g;
+  }
+
   /** Icônes simples dessinées (play, pause, feuille, engrenage, cadenas, son, note). */
   static drawIcon(
     g: Phaser.GameObjects.Graphics,
     x: number,
     y: number,
     s: number,
-    type: 'play' | 'pause' | 'leaf' | 'fruit' | 'gear' | 'lock' | 'volume' | 'music' | 'restart' | 'home' | 'heart',
+    type:
+      | 'play'
+      | 'pause'
+      | 'leaf'
+      | 'fruit'
+      | 'gear'
+      | 'lock'
+      | 'volume'
+      | 'music'
+      | 'restart'
+      | 'home'
+      | 'heart'
+      | 'trophy'
+      | 'bolt'
+      | 'chart'
+      | 'share',
     color?: number,
   ): void {
-    if (type === 'heart') {
+    if (type === 'trophy') {
+      const c = color ?? 0x9d681d;
+      g.fillStyle(c, 1);
+      g.fillRoundedRect(x - s * 0.42, y - s * 0.5, s * 0.84, s * 0.55, s * 0.16);
+      g.lineStyle(s * 0.13, c, 1);
+      g.beginPath();
+      g.arc(x - s * 0.46, y - s * 0.24, s * 0.16, Math.PI * 0.25, Math.PI * 1.3);
+      g.strokePath();
+      g.beginPath();
+      g.arc(x + s * 0.46, y - s * 0.24, s * 0.16, Math.PI * 1.7, Math.PI * 0.75, true);
+      g.strokePath();
+      g.fillRect(x - s * 0.08, y + s * 0.04, s * 0.16, s * 0.22);
+      g.fillRoundedRect(x - s * 0.3, y + s * 0.24, s * 0.6, s * 0.14, s * 0.05);
+    } else if (type === 'bolt') {
+      const c = color ?? 0xffe082;
+      g.fillStyle(c, 1);
+      g.beginPath();
+      g.moveTo(x + s * 0.12, y - s * 0.6);
+      g.lineTo(x - s * 0.35, y + s * 0.08);
+      g.lineTo(x - s * 0.02, y + s * 0.08);
+      g.lineTo(x - s * 0.12, y + s * 0.6);
+      g.lineTo(x + s * 0.35, y - s * 0.12);
+      g.lineTo(x + s * 0.02, y - s * 0.12);
+      g.closePath();
+      g.fillPath();
+    } else if (type === 'chart') {
+      const c = color ?? 0x4d321c;
+      const baseY = y + s * 0.42;
+      g.fillStyle(c, 1);
+      g.fillRoundedRect(x - s * 0.46, baseY - s * 0.36, s * 0.24, s * 0.36, s * 0.05);
+      g.fillRoundedRect(x - s * 0.12, baseY - s * 0.62, s * 0.24, s * 0.62, s * 0.05);
+      g.fillRoundedRect(x + s * 0.22, baseY - s * 0.86, s * 0.24, s * 0.86, s * 0.05);
+    } else if (type === 'share') {
+      const c = color ?? 0x4d321c;
+      const p1 = { x: x + s * 0.35, y: y - s * 0.45 };
+      const p2 = { x: x - s * 0.42, y };
+      const p3 = { x: x + s * 0.35, y: y + s * 0.45 };
+      g.lineStyle(s * 0.1, c, 1);
+      g.lineBetween(p2.x, p2.y, p1.x, p1.y);
+      g.lineBetween(p2.x, p2.y, p3.x, p3.y);
+      g.fillStyle(c, 1);
+      for (const p of [p1, p2, p3]) g.fillCircle(p.x, p.y, s * 0.17);
+    } else if (type === 'heart') {
       // Deux lobes (cercles) + pointe basse (triangle) : fiable, contrairement
       // à un unique path arc/lineTo qui produisait une forme non reconnaissable.
       const heartColor = color ?? 0xc94f3d;

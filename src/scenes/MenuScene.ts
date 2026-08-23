@@ -213,6 +213,12 @@ export class MenuScene extends Phaser.Scene {
     const bh = 92 * k;
     const yJouer = matTop + 36 * k + bh / 2;
 
+    // Halo pulsant derrière JOUER/CONTINUER (action principale, attire l'œil)
+    const halo = this.add.graphics().setDepth(5);
+    halo.fillStyle(0xfff176, 0.4);
+    halo.fillRoundedRect(w / 2 - bw / 2 - 10 * k, yJouer - bh / 2 - 10 * k, bw + 20 * k, bh + 20 * k, 26 * k);
+    this.tweens.add({ targets: halo, alpha: 0.1, scale: 1.04, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
     const playBtn = UIHelpers.makeButton(
       this,
       {
@@ -305,8 +311,9 @@ export class MenuScene extends Phaser.Scene {
         textColor: '#ffffff',
         radius: 16 * k,
         shadowColor: 0x27272f,
-        icon: 'gear',
+        icon: 'bolt',
         iconColor: 0xffffff,
+        iconScale: 0.7,
         iconPosition: 'top',
         fontSize: Math.round(b2h * 0.26),
       },

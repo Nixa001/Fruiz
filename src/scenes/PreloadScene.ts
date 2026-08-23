@@ -11,7 +11,11 @@ const audioAssets = import.meta.glob('../assets/audio/*.mp3', {
   eager: true,
   import: 'default',
 }) as Record<string, string>;
-
+// Icônes UI (PNG noir sur transparent) : recolorées à l'usage via setTintFill().
+const iconAssets = import.meta.glob('../assets/icons/*.png', {
+  eager: true,
+  import: 'default',
+}) as Record<string, string>;
 /**
  * Charge les assets externes, puis génère les textures procédurales
  * (fruits, particules). Le jeu démarre même sans aucun fichier externe.
@@ -30,6 +34,10 @@ export class PreloadScene extends Phaser.Scene {
     for (const [path, url] of Object.entries(audioAssets)) {
       const m = path.match(/\/([^/]+)\.mp3$/);
       if (m) this.load.audio(m[1], url);
+    }
+    for (const [path, url] of Object.entries(iconAssets)) {
+      const m = path.match(/\/([^/]+)\.png$/);
+      if (m) this.load.image(`icon_${m[1]}`, url);
     }
   }
 
