@@ -41,7 +41,7 @@ export class PreloadScene extends Phaser.Scene {
     }
   }
 
-  /** Écran de chargement : fond + pastèque procédurale + barre de progression
+  /** Écran de chargement : fond + soleil wax + barre de progression
    * (tout dessiné en Graphics, aucune dépendance aux assets en cours de chargement). */
   private buildLoadingUI(): void {
     const w = this.scale.width;
@@ -57,20 +57,15 @@ export class PreloadScene extends Phaser.Scene {
     UIHelpers.drawWaxBand(bands, 0, 0, w, 26 * k);
     UIHelpers.drawWaxBand(bands, 0, h - 26 * k, w, 26 * k);
 
-    // Pastèque procédurale (rebond) : les vraies textures ne sont pas encore chargées
+    // Soleil wax (rebond) : les vraies textures ne sont pas encore chargées
     const mascot = this.add.container(cx, cy - 90 * k).setDepth(5);
     const r = 90 * k;
     const g = this.add.graphics();
     g.fillStyle(0x27272f, 1);
     g.fillCircle(4 * k, 4 * k, r);
-    g.fillStyle(0x2f9e44, 1);
+    g.fillStyle(0xffc43d, 1);
     g.fillCircle(0, 0, r);
-    g.lineStyle(4 * k, 0x1b5e20, 1);
-    for (const a of [-0.9, -0.45, 0, 0.45, 0.9]) {
-      g.beginPath();
-      g.arc(0, 0, r * 0.98, Math.PI * 0.5 + a - 0.16, Math.PI * 0.5 + a + 0.16);
-      g.strokePath();
-    }
+    UIHelpers.drawIcon(g, 0, 0, r * 0.8, 'bolt', 0x543f3a);
     g.lineStyle(4 * k, 0x27272f, 1);
     g.strokeCircle(0, 0, r);
     g.fillStyle(0xffffff, 0.16);

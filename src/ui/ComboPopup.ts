@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAMEPLAY } from '../data/GameplayBalance';
 
 /** Popup "COMBO ×N" : plus le combo est haut, plus l'animation est spectaculaire. */
 export class ComboPopup {
@@ -22,9 +23,12 @@ export class ComboPopup {
     const cx = this.scene.scale.width / 2;
     const y = 250 * k;
     const color = ComboPopup.COLORS[Math.min(combo, 8) - 2];
-    const scale = 1 + combo * 0.07;
+    let scale = 1 + combo * 0.07;
 
-    this.container?.destroy();
+    if (this.container) {
+      this.scene.tweens.killTweensOf(this.container);
+      this.container.destroy();
+    }
     const text = this.scene.add
       .text(0, 0, `COMBO ×${combo}`, {
         fontFamily: '"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif',
@@ -35,9 +39,11 @@ export class ComboPopup {
       .setOrigin(0.5)
       .setStroke('#ffffff', 8 * k);
 
-    this.container = this.scene.add.container(cx, y, [text]).setDepth(60).setScale(scale * 0.4);
+    scale = Math.min(scale, this.scene.scale.width * 0.82 / text.width);
+    const container = this.scene.add.container(cx, y, [text]).setDepth(60).setScale(scale * 0.4);
+    this.container = container;
     this.scene.tweens.add({
-      targets: this.container,
+      targets: container,
       scale,
       duration: 200,
       ease: 'Back.easeOut',
@@ -45,7 +51,7 @@ export class ComboPopup {
     // secousse énergique sur les gros combos
     if (combo >= 4) {
       this.scene.tweens.add({
-        targets: this.container,
+        targets: container,
         angle: { from: -3 - combo, to: 3 + combo },
         duration: 60,
         yoyo: true,
@@ -53,14 +59,14 @@ export class ComboPopup {
       });
     }
     this.scene.tweens.add({
-      targets: this.container,
+      targets: container,
       alpha: 0,
-      delay: 1400,
+      delay: GAMEPLAY.combo.popupHoldMs,
       duration: 450,
       ease: 'Sine.easeIn',
       onComplete: () => {
-        this.container?.destroy();
-        this.container = undefined;
+        container.destroy();
+        if (this.container === container) this.container = undefined;
       },
     });
   }

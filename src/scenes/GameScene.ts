@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import { Fruit, FRUIT_CATEGORY, WALL_CATEGORY, WALL_LABEL, Matter, MatterBody } from '../entities/Fruit';
+import { GAMEPLAY } from '../data/GameplayBalance';
+import { JokerManager } from '../systems/JokerManager';
+import { JokerButton } from '../ui/JokerButton';
 import { getFruit, rollSpawnTier } from '../data/FruitData';
 import { FruitExpression, GameOverData } from '../types/GameTypes';
 import { UIHelpers } from '../ui/UIHelpers';
@@ -51,7 +54,10 @@ export class GameScene extends Phaser.Scene {
   private currentTier = 1;
   private nextTier = 1;
   private dropLocked = false;
-  private pointerDown = false;
+  private aimPointerId: number | null = null;
+  private pausedTweens: Phaser.Tweens.Tween[] = [];
+  private jokerManager!: JokerManager;
+  private jokerButton!: JokerButton;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private escKey?: Phaser.Input.Keyboard.Key;
   /** Accumulateur du balayage anti-coincement (fruits qui flottent). */
@@ -79,9 +85,13 @@ export class GameScene extends Phaser.Scene {
   create(data?: { resume?: boolean }): void {
     // Reset d'état : scene.restart() réutilise la même instance de scène
     this.fruits = [];
+    this.time.paused = false;
+    this.pausedTweens = [];
+    this.unstickAccum = 0;
+    this.matter.world.engine.timing.timeScale = 1;
     this.walls = [];
     this.dropLocked = false;
-    this.pointerDown = false;
+    this.aimPointerId = null;
     this.gameOverTriggered = false;
     this.pendingNextReveal = null;
     this.paused = false;
@@ -146,7 +156,14 @@ export class GameScene extends Phaser.Scene {
       this.currentTier = rollSpawnTier();
       this.nextTier = rollSpawnTier();
     }
+    this.jokerManager = new JokerManager(saved?.joker);
+    this.jokerButton = new JokerButton(this, () => this.useJoker());
+    this.updateJokerButton();
+    this.evolutionBar.setProgress(this.mergeManager.bestTier);
     this.refreshPreview();
+    this.saveGameState();
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    window.addEventListener('pagehide', this.onPageHide);
     // Première révélation du NEXT (aucun fruit en chute au démarrage)
     this.nextFruitUI.setTier(this.nextTier);
 
@@ -161,7 +178,8 @@ export class GameScene extends Phaser.Scene {
   private restoreSavedGame(saved: import('../managers/SaveManager').GameSaveState): void {
     this.scoreManager.score = saved.score;
     this.scoreManager.best = Math.max(this.scoreManager.best, saved.score);
-    this.mergeManager.bestTier = saved.bestTier;
+    this.mergeManager.bestTier = Math.max(4, saved.bestTier);
+    SaveManager.setUnlockedTier(this.mergeManager.bestTier);
     this.currentTier = saved.currentTier;
     this.nextTier = saved.nextTier;
     const halfW = (this.containerRight - this.containerLeft) / 2;
@@ -169,13 +187,16 @@ export class GameScene extends Phaser.Scene {
     for (const f of saved.fruits) {
       const x = this.cx + f.nx * halfW;
       const y = this.containerTop + f.ny * halfH;
-      this.spawnFruit(f.tier, x, y);
+      const fruit = this.spawnFruit(f.tier, x, y);
+      Matter.Body.setAngle(fruit.body, f.angle ?? 0);
+      Matter.Body.setVelocity(fruit.body, { x: (f.vx ?? 0) * this.scaleK, y: (f.vy ?? 0) * this.scaleK });
+      Matter.Body.setAngularVelocity(fruit.body, f.angularVelocity ?? 0);
     }
   }
 
   /** Sauvegarde l'état courant (score, tiers, positions) pour reprise ultérieure. */
-  private saveGameState(): void {
-    if (this.gameOverTriggered) return;
+  saveGameState(): void {
+    if (this.gameOverTriggered || this.mergeManager.pendingBirth) return;
     const halfW = (this.containerRight - this.containerLeft) / 2;
     const halfH = this.containerBottom - this.containerTop;
     const fruits: SavedFruit[] = this.fruits
@@ -184,6 +205,10 @@ export class GameScene extends Phaser.Scene {
         tier: f.def.id,
         nx: (f.body.position.x - this.cx) / halfW,
         ny: (f.body.position.y - this.containerTop) / halfH,
+        angle: f.body.angle,
+        vx: f.body.velocity.x / this.scaleK,
+        vy: f.body.velocity.y / this.scaleK,
+        angularVelocity: f.body.angularVelocity,
       }));
     SaveManager.saveGame({
       score: this.scoreManager.score,
@@ -191,10 +216,46 @@ export class GameScene extends Phaser.Scene {
       currentTier: this.currentTier,
       nextTier: this.nextTier,
       fruits,
+      joker: this.jokerManager.snapshot(),
     });
   }
 
-  override update(): void {
+  get isGameOver(): boolean { return this.gameOverTriggered; }
+
+  onMergeCompleted(): void {
+    this.jokerManager.registerMerge();
+    this.updateJokerButton();
+    this.saveGameState();
+  }
+
+  private updateJokerButton(): void {
+    this.jokerButton.update(this.jokerManager,
+      !this.paused && !this.dropLocked && !this.pendingNextReveal && !this.gameOverTriggered && !this.mergeManager.pendingBirth,
+      this.currentTier === this.nextTier);
+  }
+
+  private useJoker(): void {
+    this.aimPointerId = null;
+    if (this.paused || this.gameOverTriggered || this.dropLocked || this.pendingNextReveal || this.mergeManager.pendingBirth) return;
+    if (!this.jokerManager.use(this.currentTier, this.nextTier)) return;
+    [this.currentTier, this.nextTier] = [this.nextTier, this.currentTier];
+    this.refreshPreview();
+    this.nextFruitUI.setTier(this.nextTier);
+    audioManager.playButton();
+    this.updateJokerButton();
+    this.saveGameState();
+  }
+
+  private onVisibilityChange = (): void => {
+    if (document.hidden) this.onPageHide();
+  };
+
+  private onPageHide = (): void => {
+    if (!this.paused && !this.gameOverTriggered) this.togglePause();
+    this.saveGameState();
+  };
+
+  override update(_time: number, delta: number): void {
     if (this.paused) {
       if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) this.togglePause();
       return;
@@ -202,9 +263,13 @@ export class GameScene extends Phaser.Scene {
     // Clavier (test desktop) : flèches + espace, Échap = pause
     if (this.escKey && Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this.togglePause();
+      return;
     }
+    if (this.gameOverTriggered) return;
+    this.comboManager.update(delta);
+    this.updateJokerButton();
     if (this.keys) {
-      const step = 12 * this.scaleK;
+      const step = 720 * this.scaleK * delta / 1000;
       if (this.keys.left.isDown) {
         this.previewX -= step;
         this.updatePreviewPosition();
@@ -224,11 +289,11 @@ export class GameScene extends Phaser.Scene {
     if (this.fruits.some((f) => f.isRemoved)) {
       const removed = this.fruits.filter((f) => f.isRemoved);
       this.fruits = this.fruits.filter((f) => !f.isRemoved);
-      for (const fruit of removed) fruit.destroy();
+      for (const fruit of removed) if (!fruit.isMerging) fruit.destroy();
     }
     this.mergeManager.update();
     this.scoreUI.update(this.scoreManager.score, this.scoreManager.best);
-    this.dangerManager.update(this.fruits);
+    if (!this.mergeManager.pendingBirth) this.dangerManager.update(this.fruits);
     this.evolutionBar.setProgress(this.mergeManager.bestTier);
     // Balayage anti-coincement : réveille les fruits endormis en l'air
     // ou collés sur les parois sans support
@@ -244,8 +309,6 @@ export class GameScene extends Phaser.Scene {
       const f = this.pendingNextReveal;
       if (f.isRemoved || f.y >= this.dropSpawnY + (this.containerTop - this.dropSpawnY) * 0.5) {
         this.pendingNextReveal = null;
-        this.currentTier = this.nextTier;
-        this.nextTier = rollSpawnTier();
         this.previewSprite.setVisible(true);
         this.refreshPreview();
         this.nextFruitUI.setTier(this.nextTier);
@@ -254,7 +317,7 @@ export class GameScene extends Phaser.Scene {
     // Occlusion : les fruits du bas dessinés derrière, ceux du haut devant
     this.fruits.sort((a, b) => a.y - b.y);
     for (let i = 0; i < this.fruits.length; i++) {
-      this.fruits[i].setDepth(10 + i);
+      this.fruits[i].setDepth(10 + i / Math.max(1, this.fruits.length));
     }
     // Les fruits regardent le prochain fruit à lancer (éveillés seulement :
     // les endormis n'ont pas besoin de bouger les yeux chaque frame)
@@ -290,9 +353,19 @@ export class GameScene extends Phaser.Scene {
     this.buildWalls();
     this.drawBowl();
     this.updatePreviewPosition();
+    this.aimPointerId = null;
+    if (this.jokerButton) {
+      this.jokerButton.destroy();
+      this.jokerButton = new JokerButton(this, () => this.useJoker());
+      this.updateJokerButton();
+    }
   }
 
   private onShutdown(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('pagehide', this.onPageHide);
+    this.time.paused = false;
+    if (this.matter.world) this.matter.world.engine.timing.timeScale = 1;
     this.scale.off('resize', this.onResize, this);
     this.mergeManager.destroy();
     this.particleManager.destroy();
@@ -311,7 +384,7 @@ export class GameScene extends Phaser.Scene {
     const h = this.scale.height;
     const specs: [string, number, number, number][] = [
       ['fruit_2', 0.32, 42 * k, h * 0.34],
-      ['fruit_8', 0.3, w - 42 * k, h * 0.4],
+      [`fruit_${Math.min(8, SaveManager.getUnlockedTier())}`, 0.3, w - 42 * k, h * 0.4],
       ['fruit_4', 0.28, 38 * k, h * 0.56],
     ];
     for (const [tex, alpha, x, y] of specs) {
@@ -568,20 +641,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   private setupInput(): void {
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      this.pointerDown = true;
+    const inPlayArea = (pointer: Phaser.Input.Pointer): boolean =>
+      pointer.y >= 200 * this.scaleK && pointer.y <= this.containerBottom;
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.paused || this.gameOverTriggered || this.aimPointerId !== null || over.length || !inPlayArea(pointer)) return;
+      this.aimPointerId = pointer.id;
       this.onPointerMove(pointer);
     });
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.isDown && this.pointerDown) this.onPointerMove(pointer);
+      if (pointer.isDown && this.aimPointerId === pointer.id && !this.paused) this.onPointerMove(pointer);
     });
-    this.input.on('pointerup', () => {
-      // Évite un drop "fantôme" si le doigt était déjà levé
-      // avant l'arrivée dans cette scène (ex : tap sur JOUER au menu)
-      if (!this.pointerDown) return;
-      this.pointerDown = false;
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
+      if (this.aimPointerId !== pointer.id) return;
+      this.aimPointerId = null;
+      if (over.length || !inPlayArea(pointer)) return;
       this.dropCurrent();
     });
+    this.input.on('gameout', () => { this.aimPointerId = null; });
     const kb = this.input.keyboard;
     if (kb) {
       this.keys = kb.createCursorKeys();
@@ -596,9 +672,9 @@ export class GameScene extends Phaser.Scene {
 
   private dropCurrent(): void {
     // Pas de lancer tant que le fruit précédent n'a pas atteint la mi-parcours
-    if (this.dropLocked || this.pendingNextReveal || this.paused) return;
+    if (this.dropLocked || this.pendingNextReveal || this.paused || this.gameOverTriggered || this.mergeManager.pendingBirth) return;
     this.dropLocked = true;
-    this.time.delayedCall(220, () => {
+    this.time.delayedCall(GAMEPLAY.drop.cooldownMs, () => {
       this.dropLocked = false;
     });
     const fruit = this.spawnFruit(this.currentTier, this.previewX, this.previewY);
@@ -608,9 +684,14 @@ export class GameScene extends Phaser.Scene {
     // Le fruit en main disparaît et ne revient qu'à la mi-parcours de la chute.
     // La carte NEXT continue d'afficher le fruit qui viendra en main.
     this.pendingNextReveal = fruit;
+    // La file avance dès le lancer, même si son affichage attend la mi-chute.
+    this.currentTier = this.nextTier;
+    this.nextTier = rollSpawnTier();
     this.dropSpawnY = this.previewY;
     this.previewSprite.setVisible(false);
     this.guideGraphics.clear();
+    this.updateJokerButton();
+    this.saveGameState();
   }
 
   spawnFruit(tier: number, x: number, y: number): Fruit {
@@ -646,9 +727,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   togglePause(): void {
+    if (this.gameOverTriggered) return;
+    this.aimPointerId = null;
     this.paused = !this.paused;
     if (this.paused) {
       this.matter.world.pause();
+      this.saveGameState();
+      this.time.paused = true;
+      this.pausedTweens = this.tweens.getTweens().filter((tween) => !tween.isPaused());
+      this.pausedTweens.forEach((tween) => tween.pause());
       this.showPauseOverlay();
     } else {
       // Les boutons sont créés en absolu (input fiable) : à détruire à part
@@ -663,9 +750,12 @@ export class GameScene extends Phaser.Scene {
       this.pauseMenuBtn = undefined;
       this.pauseOverlay?.destroy();
       this.pauseOverlay = undefined;
+      this.time.paused = false;
+      this.pausedTweens.forEach((tween) => tween.resume());
+      this.pausedTweens = [];
       this.matter.world.resume();
       // Anti "tap-through" : le tap sur REPRENDRE ne doit pas lâcher un fruit
-      this.pointerDown = false;
+      this.aimPointerId = null;
       this.dropLocked = true;
       this.time.delayedCall(300, () => {
         this.dropLocked = false;
@@ -802,7 +892,7 @@ export class GameScene extends Phaser.Scene {
         this.pauseRestartBtn?.destroy();
         this.pauseSettingsBtn?.destroy();
         this.pauseMenuBtn?.destroy();
-        this.scene.restart();
+        this.scene.restart({ resume: false });
       },
     );
     this.pauseSettingsBtn = UIHelpers.makeButton(

@@ -44,6 +44,7 @@ export class NextFruitUI {
       return;
     }
     this.lastTier = tier;
+    this.scene.tweens.killTweensOf(this.sprite);
     this.sprite.setVisible(true).setTexture(`fruit_${tier}`).setScale(this.scene.scale.height / 1280 * 0.5);
     this.scene.tweens.add({
       targets: this.sprite,

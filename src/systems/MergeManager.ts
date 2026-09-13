@@ -1,4 +1,4 @@
-import { Fruit, MatterBody } from '../entities/Fruit';
+import { Fruit, Matter, MatterBody } from '../entities/Fruit';
 import { FRUITS, MAX_TIER_MERGE_BONUS, getFruit } from '../data/FruitData';
 import { FruitExpression } from '../types/GameTypes';
 import { FruitEffects } from '../effects/FruitEffects';
@@ -9,6 +9,7 @@ import { ScoreManager } from './ScoreManager';
 import { ComboManager } from './ComboManager';
 import { ComboPopup } from '../ui/ComboPopup';
 import { SaveManager } from '../managers/SaveManager';
+import { GAMEPLAY } from '../data/GameplayBalance';
 import type { GameScene } from '../scenes/GameScene';
 
 interface PendingMerge {
@@ -25,8 +26,10 @@ const IMPACT_SPEED = 5;
  * de contact et déclenche immédiatement de nouvelles collisions.
  */
 export class MergeManager {
-  /** Fruit le plus élevé atteint pendant la partie (les 3 premiers sont débloqués d'office). */
-  bestTier = 3;
+  /** Fruit le plus élevé atteint pendant la partie (les 4 premiers sont débloqués d'office). */
+  bestTier = 4;
+  /** Sauvegarde interdite entre retrait des parents et naissance du résultat. */
+  pendingBirth = false;
 
   private pending: PendingMerge[] = [];
   /** Une fusion à la fois : le fruit résultant doit être entièrement apparu avant d'en lancer une autre. */
@@ -47,7 +50,7 @@ export class MergeManager {
     // Filet de sécurité : scan de proximité périodique — attrape les fusions
     // que les événements de collision auraient manquées (corps endormis, etc.)
     this.scanTimer = scene.time.addEvent({
-      delay: 150,
+      delay: GAMEPLAY.merge.scanMs,
       loop: true,
       callback: () => this.proximityScan(),
     });
@@ -60,8 +63,9 @@ export class MergeManager {
   }
 
   private onCollision(_event: unknown, bodyA: MatterBody, bodyB: MatterBody): void {
-    const a = bodyA?.plugin?.fruit as Fruit | undefined;
-    const b = bodyB?.plugin?.fruit as Fruit | undefined;
+    if (this.scene.paused || this.scene.isGameOver) return;
+    const a = (bodyA?.parent ?? bodyA)?.plugin?.fruit as Fruit | undefined;
+    const b = (bodyB?.parent ?? bodyB)?.plugin?.fruit as Fruit | undefined;
 
     // Réactions d'impact (fruits entre eux ou contre les murs)
     this.handleImpact(bodyA, bodyB, a, b);
@@ -98,7 +102,7 @@ export class MergeManager {
 
   /** Fusions manquées par les événements : deux fruits de même niveau qui se touchent. */
   private proximityScan(): void {
-    if (this.scene.paused) return;
+    if (this.scene.paused || this.scene.isGameOver) return;
     const fruits = this.scene.fruits;
     for (let i = 0; i < fruits.length; i++) {
       const a = fruits[i];
@@ -110,7 +114,7 @@ export class MergeManager {
         const dx = a.x - b.x;
         const dy = a.y - b.y;
         const minDist = (a.mergeReach + b.mergeReach) * 1.02;
-        if (dx * dx + dy * dy < minDist * minDist) {
+        if (dx * dx + dy * dy < minDist * minDist && this.touching(a, b)) {
           if (!this.pending.some((p) => p.a === a || p.b === a || p.a === b || p.b === b)) {
             this.pending.push({ a, b });
           }
@@ -124,11 +128,18 @@ export class MergeManager {
    * Tant que le fruit résultant de la précédente n'est pas entièrement apparu,
    * les fusions détectées restent en file (pas d'enchaînement instantané).
    */
+  private touching(a: Fruit, b: Fruit): boolean {
+    if (!a.body || !b.body) return false;
+    const parts = a.body.parts.length > 1 ? a.body.parts.slice(1) : [a.body];
+    return parts.some((part) => Matter.Query.collides(part, [b.body]).length > 0);
+  }
+
   update(): void {
-    if (this.busy) return;
+    if (this.busy || this.scene.paused || this.scene.isGameOver) return;
     while (this.pending.length > 0) {
       const { a, b } = this.pending.shift()!;
       if (a.isRemoved || b.isRemoved || a.isMerging || b.isMerging) continue;
+      if (!this.touching(a, b)) continue;
       this.doMerge(a, b);
       return;
     }
@@ -141,31 +152,36 @@ export class MergeManager {
     const y = (a.y + b.y) / 2;
     const color = a.def.color;
 
+    scene.saveGameState();
+    this.pendingBirth = true;
     this.busy = true;
     a.isMerging = true;
     b.isMerging = true;
-    a.removeBody();
-    b.removeBody();
+
     // Déblocage : première apparition d'un fruit de niveau ≥ 4
     const newTier = Math.min(tier + 1, FRUITS.length);
     const isUnlock = newTier >= 4 && newTier > this.bestTier;
-    this.bestTier = Math.max(this.bestTier, newTier);
+
 
     // Les deux fruits se compressent vers le centre puis disparaissent
     a.express(FruitExpression.MERGING);
     b.express(FruitExpression.MERGING);
+    a.removeBody();
+    b.removeBody();
+    scene.tweens.killTweensOf(a);
+    scene.tweens.killTweensOf(b);
     FruitEffects.mergeSquash(scene, a, x, y, () => a.destroy());
     FruitEffects.mergeSquash(scene, b, x, y, () => b.destroy());
 
     // Flash + particules + shake au moment du "pop"
-    scene.time.delayedCall(90, () => {
+    scene.time.delayedCall(GAMEPLAY.merge.squashMs - 20, () => {
       this.particles.mergeBurst(x, y, color, tier);
       this.screens.shake(Math.min(0.004 + tier * 0.0025, 0.03), 220 + tier * 8);
       if (tier >= 8) this.screens.flash(0.35, 110);
       this.audio.playMerge(tier);
     });
 
-    scene.time.delayedCall(110, () => {
+    scene.time.delayedCall(GAMEPLAY.merge.squashMs, () => {
       const comboN = this.combo.registerMerge();
       if (tier >= FRUITS.length) {
         // Deux pastèques : elles disparaissent, bonus géant
@@ -180,15 +196,19 @@ export class MergeManager {
       } else {
         const fruit = scene.spawnFruit(tier + 1, x, y);
         // Petit pop vers le haut : la fusion "pousse" le nouveau fruit
-        fruit.body.velocity.y = -3;
+        Matter.Body.setVelocity(fruit.body, { x: 0, y: -3 * fruit.radiusScale });
         FruitEffects.spawnPop(scene, fruit);
         fruit.express(FruitExpression.CELEBRATING, 1400);
         this.score.addMerge(tier + 1, comboN, x, y);
         // File libérée seulement une fois le fruit fusionné entièrement apparu (fin du pop)
-        scene.time.delayedCall(360, () => {
+        scene.time.delayedCall(comboN > 1 ? GAMEPLAY.merge.chainRevealMs : GAMEPLAY.merge.revealMs, () => {
           this.busy = false;
         });
       }
+      this.bestTier = Math.max(this.bestTier, newTier);
+      SaveManager.setUnlockedTier(this.bestTier);
+      this.pendingBirth = false;
+      scene.onMergeCompleted();
       if (comboN >= 2) {
         this.popup.show(comboN);
         this.audio.playCombo(comboN);

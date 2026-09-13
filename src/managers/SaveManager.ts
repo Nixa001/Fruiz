@@ -1,3 +1,5 @@
+import type { JokerState } from '../systems/JokerManager';
+
 /**
  * Persistance localStorage.
  * Prêt à évoluer (coins, unlockedFruits, statistics) sans casser l'existant.
@@ -19,6 +21,10 @@ export interface SavedFruit {
   tier: number;
   nx: number;
   ny: number;
+  angle?: number;
+  vx?: number;
+  vy?: number;
+  angularVelocity?: number;
 }
 
 export interface GameSaveState {
@@ -27,6 +33,7 @@ export interface GameSaveState {
   currentTier: number;
   nextTier: number;
   fruits: SavedFruit[];
+  joker?: JokerState;
 }
 
 export class SaveManager {
@@ -92,7 +99,7 @@ export class SaveManager {
    * (les 4 premiers tiers sont spawnables/visibles dès le début). */
   static getUnlockedTier(): number {
     const v = SaveManager.storage()?.getItem(KEYS.unlockedTier);
-    return v ? parseInt(v, 10) || 4 : 4;
+    return Math.min(12, Math.max(4, Number.parseInt(v ?? '', 10) || 4));
   }
 
   static setUnlockedTier(tier: number): void {

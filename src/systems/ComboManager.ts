@@ -1,17 +1,22 @@
+import { GAMEPLAY } from '../data/GameplayBalance';
+
 /**
- * Combo : fusions rapprochées dans une fenêtre de 0,8 s.
+ * Combo : fusions rapprochées dans une fenêtre de jeu actif configurable (pause exclue).
  * Maximum ×8. Le combo sert de multiplicateur de score.
  */
 export class ComboManager {
-  static readonly WINDOW_MS = 800;
-  static readonly MAX_COMBO = 8;
+  static readonly WINDOW_MS = GAMEPLAY.combo.windowMs;
+  static readonly MAX_COMBO = GAMEPLAY.combo.max;
 
   private combo = 0;
+  private elapsed = 0;
   private lastMergeTime = -Infinity;
+
+  update(delta: number): void { this.elapsed += delta; }
 
   /** Enregistre une fusion et retourne le combo courant (1 = pas de combo). */
   registerMerge(): number {
-    const now = performance.now();
+    const now = this.elapsed;
     if (now - this.lastMergeTime <= ComboManager.WINDOW_MS) {
       this.combo = Math.min(this.combo + 1, ComboManager.MAX_COMBO);
     } else {

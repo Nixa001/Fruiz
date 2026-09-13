@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAMEPLAY } from '../data/GameplayBalance';
 import { Fruit } from '../entities/Fruit';
 import { FruitExpression } from '../types/GameTypes';
 
@@ -6,7 +7,6 @@ import { FruitExpression } from '../types/GameTypes';
 export class FruitEffects {
   /** Apparition d'un fruit issu d'une fusion : pop avec rebond. */
   static spawnPop(scene: Phaser.Scene, fruit: Fruit): void {
-    const k = scene.scale.height / 1280;
     fruit.setScale(0.3);
     scene.tweens.add({
       targets: fruit,
@@ -21,15 +21,6 @@ export class FruitEffects {
           ease: 'Quad.easeOut',
         });
       },
-    });
-    // petit saut de joie
-    scene.tweens.add({
-      targets: fruit,
-      y: fruit.y - 26 * k,
-      duration: 260,
-      yoyo: true,
-      repeat: 1,
-      ease: 'Sine.easeInOut',
     });
   }
 
@@ -69,7 +60,7 @@ export class FruitEffects {
       x: tx,
       y: ty,
       scale: 0.35,
-      duration: 110,
+      duration: GAMEPLAY.merge.squashMs,
       ease: 'Quad.easeIn',
       onComplete,
     });

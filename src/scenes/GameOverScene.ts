@@ -988,28 +988,37 @@ export class GameOverScene extends Phaser.Scene {
       0.5
     );
 
-    // Groupe icône + texte centré (mesure réelle, pas d'estimation)
+    // Réserve la place occupée au sommet des deux pulsations.
+    // Le conteneur anime l'icône sans écraser l'échelle ajustée de son PNG.
     const iconR2 = 24 * k;
+    const trophyPulse = 1.12;
+    const textPulse = 1.06;
+    const iconWidth = iconR2 * 2.1 * trophyPulse;
+    const textWidth = text.width * textPulse;
     const gapIT2 = 16 * k;
-    const groupHalf2 = (iconR2 * 2 + gapIT2 + text.width) / 2;
-    const trophy = UIHelpers.addIcon(this, -groupHalf2 + iconR2, 0, iconR2, 'trophy', 0xffffff);
-    row.add(trophy);
+    const contentWidth = iconWidth + gapIT2 + textWidth;
+    const content = this.add.container(0, 0).setName('record-content');
+    const trophy = this.add.container(-contentWidth / 2 + iconWidth / 2, 0)
+      .setName('record-trophy');
+    trophy.add(UIHelpers.addIcon(this, 0, 0, iconR2, 'trophy', 0xffffff));
+    content.add(trophy);
     this.tweens.add({
       targets: trophy,
-      scale: 1.12,
+      scale: trophyPulse,
       duration: 700,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
-    text.setX(-groupHalf2 + iconR2 * 2 + gapIT2 + text.width / 2);
-
-    row.add(text);
+    text.setX(contentWidth / 2 - textWidth / 2).setName('record-label');
+    content.add(text);
+    content.setScale(Math.min(1, (width - 32 * k) / contentWidth));
+    row.add(content).setName('game-over-new-record');
     panel.add(row);
 
     this.tweens.add({
       targets: text,
-      scale: 1.06,
+      scale: textPulse,
       duration: 550,
       yoyo: true,
       repeat: -1,
@@ -1253,7 +1262,7 @@ export class GameOverScene extends Phaser.Scene {
     FONT: string
   ): void {
     const gap =
-      10 * k;
+      18 * k;
 
     const totalW =
       Math.min(
@@ -1262,26 +1271,14 @@ export class GameOverScene extends Phaser.Scene {
       );
 
     const buttonW =
-      (totalW - gap * 2) / 3;
+      (totalW - gap) / 2;
 
     const buttonH =
       100 * k;
 
     const buttons = [
       {
-        x:
-          -buttonW -
-          gap,
-        tex: 'home' as const,
-        label: 'ACCUEIL',
-        action: () => {
-          audioManager.playButton();
-          this.scene.stop();
-          this.scene.start('Menu');
-        },
-      },
-      {
-        x: 0,
+        x: -(buttonW + gap) / 2,
         tex: 'chart' as const,
         label: 'CLASSEMENT',
         action: () => {
@@ -1291,9 +1288,7 @@ export class GameOverScene extends Phaser.Scene {
         },
       },
       {
-        x:
-          buttonW +
-          gap,
+        x: (buttonW + gap) / 2,
         tex: 'share' as const,
         label: 'PARTAGER',
         action: () => {
@@ -1306,6 +1301,11 @@ export class GameOverScene extends Phaser.Scene {
 
     for (const item of buttons) {
       const x = item.x;
+      // Tout le visuel grandit autour du centre du bouton ; sa zone reste fixe.
+      const visual = this.add.container(x, y)
+        .setName(`game-over-${item.label}`)
+        .setSize(buttonW, buttonH);
+      panel.add(visual);
 
       const g =
         this.add.graphics();
@@ -1317,8 +1317,8 @@ export class GameOverScene extends Phaser.Scene {
       );
 
       g.fillRoundedRect(
-        x - buttonW / 2 + 4 * k,
-        y - buttonH / 2 + 6 * k,
+        -buttonW / 2 + 4 * k,
+        -buttonH / 2 + 6 * k,
         buttonW,
         buttonH,
         22 * k
@@ -1331,8 +1331,8 @@ export class GameOverScene extends Phaser.Scene {
       );
 
       g.fillRoundedRect(
-        x - buttonW / 2,
-        y - buttonH / 2,
+        -buttonW / 2,
+        -buttonH / 2,
         buttonW,
         buttonH,
         22 * k
@@ -1345,27 +1345,27 @@ export class GameOverScene extends Phaser.Scene {
       );
 
       g.strokeRoundedRect(
-        x - buttonW / 2,
-        y - buttonH / 2,
+        -buttonW / 2,
+        -buttonH / 2,
         buttonW,
         buttonH,
         22 * k
       );
 
-      panel.add(g);
+      visual.add(g);
 
-      const icon = UIHelpers.addIcon(this, x, y - 12 * k, 15 * k, item.tex, 0x4d321c);
-      panel.add(icon);
+      const icon = UIHelpers.addIcon(this, 0, -14 * k, 18 * k, item.tex, 0x4d321c);
+      visual.add(icon);
 
       const label =
         this.add.text(
-          x,
-          y + 28 * k,
+          0,
+          28 * k,
           item.label,
           {
             fontFamily: FONT,
             fontSize: `${Math.round(
-              13 * k
+              18 * k
             )}px`,
             fontStyle: 'bold',
             color: '#4d321c',
@@ -1374,7 +1374,7 @@ export class GameOverScene extends Phaser.Scene {
 
       label.setOrigin(0.5);
 
-      panel.add(label);
+      visual.add(label);
 
       const zone =
         this.add
@@ -1393,12 +1393,9 @@ export class GameOverScene extends Phaser.Scene {
       zone.on(
         'pointerover',
         () => {
+          this.tweens.killTweensOf(visual);
           this.tweens.add({
-            targets: [
-              g,
-              icon,
-              label,
-            ],
+            targets: visual,
             scale: 1.05,
             duration: 120,
           });
@@ -1408,12 +1405,9 @@ export class GameOverScene extends Phaser.Scene {
       zone.on(
         'pointerout',
         () => {
+          this.tweens.killTweensOf(visual);
           this.tweens.add({
-            targets: [
-              g,
-              icon,
-              label,
-            ],
+            targets: visual,
             scale: 1,
             duration: 120,
           });

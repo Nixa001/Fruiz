@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getFaceConfig } from '../data/FruitFaces';
 import { UIHelpers } from '../ui/UIHelpers';
 import { audioManager } from '../managers/AudioManager';
 import { FRUITS } from '../data/FruitData';
@@ -96,9 +97,9 @@ export class MenuScene extends Phaser.Scene {
     const w = this.scale.width;
     const doodleSpecs: [string, number, number, number][] = [
       ['fruit_2', 0.55, 90 * k, 250 * k],
-      ['fruit_5', 0.5, w - 80 * k, 330 * k],
+      [`fruit_${Math.min(5, SaveManager.getUnlockedTier())}`, 0.5, w - 80 * k, 330 * k],
       ['fruit_3', 0.5, 70 * k, 1120 * k],
-      ['fruit_6', 0.45, w - 70 * k, 1080 * k],
+      [`fruit_${Math.min(6, SaveManager.getUnlockedTier())}`, 0.45, w - 70 * k, 1080 * k],
     ];
     for (const [tex, alpha, x, y] of doodleSpecs) {
       const img = this.add.image(x, y, tex).setScale(k * 0.4).setAlpha(alpha).setDepth(1);
@@ -182,9 +183,12 @@ export class MenuScene extends Phaser.Scene {
     // Mascotte pastèque vivante (grosse, au centre)
     const mascotY = 545 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
-    const img = this.add.image(0, 0, 'pasteque').setScale(k * 0.505);
+    const mascotTier = Math.min(12, SaveManager.getUnlockedTier());
+    const mascotDef = FRUITS[mascotTier - 1];
+    const mascotScale = 104 * k / mascotDef.radius;
+    const img = this.add.image(0, 0, `fruit_${mascotTier}`).setScale(mascotScale);
     mascot.add(img);
-    this.mascotFace = new FaceController(this, 104, k * 1.05, { dy: 0.24, dx: 0, scale: 1, rotation: 0 });
+    this.mascotFace = new FaceController(this, mascotDef.radius, mascotScale, getFaceConfig(mascotTier));
     mascot.add(this.mascotFace.root);
     this.tweens.add({
       targets: mascot,
@@ -798,9 +802,9 @@ export class MenuScene extends Phaser.Scene {
 
 ['Associe 2 fruits identiques\npour les fusionner !', 'fruit_4', 0x2f9e44, 39],
 
-['Aucun fruit ne doit sortir\nde la calebasse !', 'fruit_5', 0xba1a1a, 45],
+['Aucun fruit ne doit sortir\nde la calebasse !', 'fruit_3', 0xba1a1a, 34],
 
-['Plus la fusion est grande,\nplus tu gagnes de points !', 'fruit_6', 0x2d4a8e, 59],
+['Plus la fusion est grande,\nplus tu gagnes de points !', 'fruit_4', 0x2d4a8e, 40],
 
 ['Choisis ton fruit préféré dans\nCollection : fête spéciale à son déblocage !', null, 0xc94f3d, 0],
     ];

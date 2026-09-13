@@ -34,6 +34,12 @@ interface MatterLib {
       flagInternal?: boolean,
     ): MatterJS.BodyType | undefined;
   };
+  Query: { collides(body: MatterJS.BodyType, bodies: MatterJS.BodyType[]): MatterJS.Collision[] };
+  Body: {
+    setVelocity(body: MatterJS.BodyType, velocity: MatterJS.Vector): void;
+    setAngle(body: MatterJS.BodyType, angle: number): void;
+    setAngularVelocity(body: MatterJS.BodyType, velocity: number): void;
+  };
   Composite: {
     // engine.world est un World matter-js (sous-classe runtime de Composite) : unknown côté types
     add(composite: unknown, object: MatterJS.BodyType): unknown;
@@ -211,6 +217,8 @@ export class Fruit extends Phaser.GameObjects.Container {
    * le corps Matter brut n'a pas de destroy, on le détache avant.
    */
   override destroy(fromScene?: boolean): void {
+    if (!this.active) return;
+    this.scene.tweens.killTweensOf(this);
     this.face.destroy();
     (this as unknown as { body: unknown }).body = null;
     super.destroy(fromScene);

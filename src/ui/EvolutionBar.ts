@@ -67,7 +67,7 @@ export class EvolutionBar {
     const line = scene.add.graphics().setDepth(7);
     line.lineStyle(3 * k, 0x27272f, 0.25);
     line.lineBetween(margin, y + 4 * k, w - margin, y + 4 * k);
-    this.lastTier = 0;
+    this.setProgress(4);
   }
 
   setProgress(bestTier: number): void {
