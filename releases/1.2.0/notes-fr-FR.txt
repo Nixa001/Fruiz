@@ -1,0 +1,10 @@
+<fr-FR>
+Nouveau joker : échangez le fruit en main avec le suivant ! Une charge au départ, puis une recharge après 8 fusions.
+
+• Fusions plus fiables et combos plus lisibles.
+• Sauvegarde et reprise de partie améliorées.
+• Pause et commandes tactiles corrigées.
+• Écran de fin réorganisé, icônes et animations ajustées.
+
+Bon jeu sur Fruiz !
+</fr-FR>

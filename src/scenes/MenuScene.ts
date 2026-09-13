@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { MENU_FRUIT_FRAMES } from '../data/MenuFruitFrames';
 import { getFaceConfig } from '../data/FruitFaces';
 import { UIHelpers } from '../ui/UIHelpers';
 import { audioManager } from '../managers/AudioManager';
@@ -6,6 +7,11 @@ import { FRUITS } from '../data/FruitData';
 import { FaceController } from '../entities/FaceController';
 import { FruitExpression } from '../types/GameTypes';
 import { SaveManager } from '../managers/SaveManager';
+
+// Les URL sont connues au build, mais seule la mascotte déjà débloquée est chargée.
+const menuFruitAssets = import.meta.glob('../assets/menu/fruit_*.png', {
+  eager: true, import: 'default',
+}) as Record<string, string>;
 
 /**
  * Menu principal animé : logo, mascotte vivante, écrans FRUITS et PARAMÈTRES.
@@ -19,6 +25,13 @@ export class MenuScene extends Phaser.Scene {
 
   constructor() {
     super('Menu');
+  }
+
+  preload(): void {
+    const tier = Math.min(12, SaveManager.getUnlockedTier());
+    const key = `menu_fruit_${tier}`;
+    const url = menuFruitAssets[`../assets/menu/fruit_${tier}.png`];
+    if (url && !this.textures.exists(key)) this.load.image(key, url);
   }
 
   create(): void {
@@ -180,13 +193,22 @@ export class MenuScene extends Phaser.Scene {
       })
       .setDepth(2);
 
-    // Mascotte pastèque vivante (grosse, au centre)
+    // Mascotte connue en haute définition, sans agrandir la petite texture de jeu.
     const mascotY = 545 * k;
     const mascot = this.add.container(w / 2, mascotY).setDepth(5);
     const mascotTier = Math.min(12, SaveManager.getUnlockedTier());
     const mascotDef = FRUITS[mascotTier - 1];
     const mascotScale = 104 * k / mascotDef.radius;
-    const img = this.add.image(0, 0, `fruit_${mascotTier}`).setScale(mascotScale);
+    const hdKey = `menu_fruit_${mascotTier}`;
+    const hdFrame = MENU_FRUIT_FRAMES[mascotTier];
+    const useHD = this.textures.exists(hdKey) && hdFrame;
+    if (useHD && !this.textures.get(hdKey).has('visible')) {
+      this.textures.get(hdKey).add('visible', 0, ...hdFrame);
+    }
+    const img = useHD
+      ? this.add.image(0, 0, hdKey, 'visible').setScale(250 * k / Math.max(hdFrame[2], hdFrame[3]))
+      : this.add.image(0, 0, `fruit_${mascotTier}`).setScale(mascotScale);
+    img.setName('menu-mascot-image');
     mascot.add(img);
     this.mascotFace = new FaceController(this, mascotDef.radius, mascotScale, getFaceConfig(mascotTier));
     mascot.add(this.mascotFace.root);

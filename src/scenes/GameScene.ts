@@ -55,6 +55,8 @@ export class GameScene extends Phaser.Scene {
   private nextTier = 1;
   private dropLocked = false;
   private aimPointerId: number | null = null;
+  /** Un seul relâchement mémorisé pendant la courte attente de lancer. */
+  private queuedDropX: number | null = null;
   private pausedTweens: Phaser.Tweens.Tween[] = [];
   private jokerManager!: JokerManager;
   private jokerButton!: JokerButton;
@@ -91,7 +93,7 @@ export class GameScene extends Phaser.Scene {
     this.matter.world.engine.timing.timeScale = 1;
     this.walls = [];
     this.dropLocked = false;
-    this.aimPointerId = null;
+    this.cancelAim();
     this.gameOverTriggered = false;
     this.pendingNextReveal = null;
     this.paused = false;
@@ -235,7 +237,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private useJoker(): void {
-    this.aimPointerId = null;
+    this.cancelAim();
     if (this.paused || this.gameOverTriggered || this.dropLocked || this.pendingNextReveal || this.mergeManager.pendingBirth) return;
     if (!this.jokerManager.use(this.currentTier, this.nextTier)) return;
     [this.currentTier, this.nextTier] = [this.nextTier, this.currentTier];
@@ -279,7 +281,7 @@ export class GameScene extends Phaser.Scene {
         this.updatePreviewPosition();
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.space) || Phaser.Input.Keyboard.JustDown(this.keys.up)) {
-        this.dropCurrent();
+        this.requestDrop(this.previewX);
       }
     }
     for (const fruit of this.fruits) {
@@ -314,6 +316,7 @@ export class GameScene extends Phaser.Scene {
         this.nextFruitUI.setTier(this.nextTier);
       }
     }
+    this.flushPendingDrop();
     // Occlusion : les fruits du bas dessinés derrière, ceux du haut devant
     this.fruits.sort((a, b) => a.y - b.y);
     for (let i = 0; i < this.fruits.length; i++) {
@@ -353,7 +356,7 @@ export class GameScene extends Phaser.Scene {
     this.buildWalls();
     this.drawBowl();
     this.updatePreviewPosition();
-    this.aimPointerId = null;
+    this.cancelAim();
     if (this.jokerButton) {
       this.jokerButton.destroy();
       this.jokerButton = new JokerButton(this, () => this.useJoker());
@@ -362,6 +365,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onShutdown(): void {
+    this.cancelAim();
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     window.removeEventListener('pagehide', this.onPageHide);
     this.time.paused = false;
@@ -642,9 +646,15 @@ export class GameScene extends Phaser.Scene {
 
   private setupInput(): void {
     const inPlayArea = (pointer: Phaser.Input.Pointer): boolean =>
+      pointer.x >= 0 && pointer.x <= this.scale.width &&
       pointer.y >= 200 * this.scaleK && pointer.y <= this.containerBottom;
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
-      if (this.paused || this.gameOverTriggered || this.aimPointerId !== null || over.length || !inPlayArea(pointer)) return;
+      if (over.length || !inPlayArea(pointer)) {
+        this.cancelAim();
+        return;
+      }
+      if (this.paused || this.gameOverTriggered || this.aimPointerId !== null) return;
+      this.queuedDropX = null; // Reprendre la visée remplace l'intention précédente.
       this.aimPointerId = pointer.id;
       this.onPointerMove(pointer);
     });
@@ -654,10 +664,18 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => {
       if (this.aimPointerId !== pointer.id) return;
       this.aimPointerId = null;
-      if (over.length || !inPlayArea(pointer)) return;
-      this.dropCurrent();
+      if (pointer.wasCanceled || over.length || !inPlayArea(pointer)) {
+        this.cancelAim();
+        return;
+      }
+      // Utilise la position de relâchement, même sans dernier événement move.
+      this.onPointerMove(pointer);
+      this.requestDrop(this.previewX);
     });
-    this.input.on('gameout', () => { this.aimPointerId = null; });
+    this.input.on('pointerupoutside', (pointer: Phaser.Input.Pointer) => {
+      if (this.aimPointerId === pointer.id) this.cancelAim();
+    });
+    this.input.on('gameout', () => this.cancelAim());
     const kb = this.input.keyboard;
     if (kb) {
       this.keys = kb.createCursorKeys();
@@ -668,6 +686,26 @@ export class GameScene extends Phaser.Scene {
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
     this.previewX = pointer.x;
     this.updatePreviewPosition();
+  }
+
+  private cancelAim(): void {
+    this.aimPointerId = null;
+    this.queuedDropX = null;
+  }
+
+  private requestDrop(x: number): void {
+    if (this.paused || this.gameOverTriggered) return;
+    this.queuedDropX = x;
+    this.flushPendingDrop();
+  }
+
+  private flushPendingDrop(): void {
+    if (this.queuedDropX === null || this.aimPointerId !== null || this.paused || this.gameOverTriggered) return;
+    if (this.dropLocked || this.pendingNextReveal || this.mergeManager.pendingBirth) return;
+    this.previewX = this.queuedDropX;
+    this.queuedDropX = null; // Consommer avant le lancer : jamais de répétition automatique.
+    this.updatePreviewPosition();
+    this.dropCurrent();
   }
 
   private dropCurrent(): void {
@@ -728,7 +766,7 @@ export class GameScene extends Phaser.Scene {
 
   togglePause(): void {
     if (this.gameOverTriggered) return;
-    this.aimPointerId = null;
+    this.cancelAim();
     this.paused = !this.paused;
     if (this.paused) {
       this.matter.world.pause();
@@ -755,7 +793,7 @@ export class GameScene extends Phaser.Scene {
       this.pausedTweens = [];
       this.matter.world.resume();
       // Anti "tap-through" : le tap sur REPRENDRE ne doit pas lâcher un fruit
-      this.aimPointerId = null;
+      this.cancelAim();
       this.dropLocked = true;
       this.time.delayedCall(300, () => {
         this.dropLocked = false;
@@ -1102,6 +1140,7 @@ export class GameScene extends Phaser.Scene {
   gameOver(): void {
     if (this.gameOverTriggered) return;
     this.gameOverTriggered = true;
+    this.cancelAim();
     // Petit moment dramatique : les fruits sont tristes, l'écran tremble
     for (const fruit of this.fruits) {
       fruit.express(FruitExpression.GAME_OVER);

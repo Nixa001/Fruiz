@@ -1,0 +1,30 @@
+{
+  "applicationId": "com.fruiz.game",
+  "versionName": "1.2.0",
+  "versionCode": 4,
+  "targetSdk": 36,
+  "minSdk": 24,
+  "sourceCommit": "0353038ec3fb5b1e6ba3bcf313841c073ce15c8b",
+  "packagedAtUtc": "2026-09-13T15:58:07.401636+00:00",
+  "signerCertificateSha256": "DA:C8:8E:F8:0B:C0:71:BE:A7:75:3A:2A:00:E6:13:4F:21:A6:2C:C7:CD:30:CC:5A:3A:AC:DB:AA:7D:2A:05:6E",
+  "checks": [
+    "TypeScript and Vite production build passed",
+    "Capacitor Android sync passed",
+    "Gradle assembleRelease and bundleRelease passed, including lintVitalRelease",
+    "APK signature v2 verified",
+    "AAB JAR signature verified and certificate matches APK",
+    "bundletool validate passed",
+    "APK and AAB manifests identify version 1.2.0 (4), release/non-debuggable",
+    "35 web files in each artifact match dist byte-for-byte"
+  ],
+  "artifacts": {
+    "fruiz-1.2.0-4.apk": {
+      "bytes": 11487816,
+      "sha256": "5771a8063db977041842186c92973961aff455ca3dfa1a58a63d4ba213cce336"
+    },
+    "fruiz-1.2.0-4.aab": {
+      "bytes": 11331395,
+      "sha256": "fa3caae76e3b48e2b291261b0d856504d5d8a085d60814e9e58dac43bda09708"
+    }
+  }
+}
