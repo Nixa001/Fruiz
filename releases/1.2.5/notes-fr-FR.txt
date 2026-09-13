@@ -1,0 +1,7 @@
+<fr-FR>
+• Le fruit suivant devient disponible uniquement lorsque le précédent atteint l’entrée de la calebasse ou fusionne avec la pile.
+• Cette attente est conservée après une sauvegarde et une reprise de partie.
+• Aucun lancer automatique après un appui pendant l’attente.
+
+Bon jeu sur Fruiz !
+</fr-FR>

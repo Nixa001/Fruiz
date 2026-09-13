@@ -1,7 +1,7 @@
 {
   "name": "fruiz",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.5",
   "type": "module",
   "description": "FRUIZ — jeu mobile casual de fusion de fruits (Phaser 3 + TypeScript + Vite + Matter)",
   "scripts": {

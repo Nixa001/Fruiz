@@ -5,22 +5,16 @@ import { FruitExpression } from '../types/GameTypes';
 
 /** Squash & stretch et petites animations appliquées aux fruits. */
 export class FruitEffects {
-  /** Apparition d'un fruit issu d'une fusion : pop avec rebond. */
+  /** Apparition douce, sans rebond ni dépassement de la taille finale.
+   * Seul le visuel change : le corps physique garde sa forme et sa position.
+   */
   static spawnPop(scene: Phaser.Scene, fruit: Fruit): void {
-    fruit.setScale(0.3);
+    fruit.setScale(0.85);
     scene.tweens.add({
       targets: fruit,
-      scale: 1.12,
-      duration: 220,
-      ease: 'Back.easeOut',
-      onComplete: () => {
-        scene.tweens.add({
-          targets: fruit,
-          scale: 1,
-          duration: 140,
-          ease: 'Quad.easeOut',
-        });
-      },
+      scale: 1,
+      duration: GAMEPLAY.merge.revealMs,
+      ease: 'Cubic.easeOut',
     });
   }
 

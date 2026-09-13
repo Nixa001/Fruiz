@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import puppeteer from 'puppeteer-core';
+const browser=await puppeteer.launch({executablePath:process.env.CHROME??'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,args:['--enable-unsafe-swiftshader']});
+const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const check=(s,b)=>{assert.ok(b,s);console.log('PASS '+s);};
+try {
+ await page.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
+ await page.goto(process.env.URL??'http://127.0.0.1:5177');await page.waitForFunction(()=>window.__game?.scene.isActive('Menu'));
+ await page.evaluate(()=>{const m=window.__game.scene;m.stop('Menu');m.start('Game',{resume:false});});
+ await page.waitForFunction(()=>window.__game.scene.isActive('Game'));await wait(200);
+ const cdp=await page.createCDPSession();
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:150,y:300,id:1}]});
+ await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');window.aimSamples=[];window.guideClears=0;const clear=g.guideGraphics.clear;g.guideGraphics.clear=function(...args){window.guideClears++;return clear.apply(this,args);};g.events.on('postupdate',()=>window.aimSamples.push({x:g.previewX/window.devicePixelRatio,guideX:g.guideGraphics.x/window.devicePixelRatio}));});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:240,y:300,id:1}]});await wait(300);
+ const samples=await page.evaluate(()=>window.aimSamples);
+ check('positions intermédiaires entre événements tactiles',samples.some(p=>p.x>151 && p.x<239));
+ check('convergence vers le doigt',Math.abs(samples.at(-1).x-240)<1);
+ check('pas de dépassement ni recul',samples.every((p,i)=>p.x<=240.1 && (!i||p.x>=samples[i-1].x-0.01)));
+ check('guide aligné avec le fruit',samples.every(p=>Math.abs(p.guideX-p.x)<0.01));
+ check('aucune reconstruction du guide pendant le glissement',await page.evaluate(()=>window.guideClears===0));
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:290,y:300,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ check('lancer au point final du doigt sans attendre le lissage',await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');return g.fruits.length===1 && Math.abs(g.fruits[0].body.position.x/window.devicePixelRatio-290)<1;}));
+ await page.waitForFunction(()=>!window.__game.scene.getScene('Game').dropLocked,{timeout:3000});
+ check('guide de nouveau visible après préparation',await page.evaluate(()=>window.__game.scene.getScene('Game').guideGraphics.visible));
+ await page.setViewport({width:320,height:640,deviceScaleFactor:3,isMobile:true,hasTouch:true});await wait(250);
+ check('guide recalculé après redimensionnement',await page.evaluate(()=>window.guideClears>0));
+ check('aucune erreur JavaScript',errors.length===0);
+} finally {await browser.close();}

@@ -1,0 +1,2 @@
+a729481490eabbd243c925bbbfb69b4df13f763b8a6cc718912161c811a66108  fruiz-1.2.1-5.apk
+aa15c7cf284de2ced32a51cdc4e0a2fb2fcdfb845b1c8df44cad8724b3c3a07b  fruiz-1.2.1-5.aab

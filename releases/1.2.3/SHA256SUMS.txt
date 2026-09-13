@@ -1,0 +1,3 @@
+67a218ee5a7a5e8007b3858409f086c363c9c2f0ee256fc5ca6240e5ffdb36ac  fruiz-1.2.3-7.apk
+20e57508ba07d41568a3adced23412bee5c737cdf8412dbcff70de28d15ba156  fruiz-1.2.3-7.aab
+fc9053a2deb7834842cfc981dd0def9e3e6b1ad4aba6fa11f6c4b9af4bfa2fb2  mapping.txt

@@ -4,8 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.fruiz.game',
   appName: 'Fruiz',
   webDir: 'dist',
-  // Orientation portrait verrouillée au niveau natif
-  // (déclarée aussi dans AndroidManifest.xml / Info.plist générés par Capacitor)
+  // MainActivity protège la WebView avec les insets natifs sur toutes les
+  // versions Android ; désactiver leur application CSS pour éviter un doublon.
+  plugins: {
+    SystemBars: { insetsHandling: 'disable', style: 'LIGHT' },
+  },
 };
 
 export default config;

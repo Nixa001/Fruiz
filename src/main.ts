@@ -14,12 +14,15 @@ import { DPR } from './dpr';
   decomp,
 );
 
-// Résolution de référence : portrait mobile 720x1280.
-// Layout adaptatif gère toutes les tailles (360x800 → 720x1280).
-// Mode Scale.NONE + zoom inverse au DPR : le monde tourne en pixels
-// physiques (canvas net sur écrans retina), affiché à taille CSS via zoom.
-const physWidth = Math.round(window.innerWidth * DPR);
-const physHeight = Math.round(window.innerHeight * DPR);
+// Le plateau garde ses coordonnées pendant rotation/redimensionnement :
+// aucun déplacement des corps Matter, ni reconstruction des menus ouverts.
+// Sur téléphone haut, conserver son ratio initial ; ailleurs, cadre portrait 9:16.
+const host = document.getElementById('game')!;
+const initialWidth = host.clientWidth || window.innerWidth;
+const initialHeight = host.clientHeight || window.innerHeight;
+const aspect = Math.min(720 / 1280, initialWidth / initialHeight);
+const physHeight = Math.round(initialHeight * DPR);
+const physWidth = Math.round(physHeight * aspect);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -28,8 +31,8 @@ const game = new Phaser.Game({
   width: physWidth,
   height: physHeight,
   scale: {
-    mode: Phaser.Scale.NONE,
-    zoom: 1 / DPR,
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   render: {
     antialias: true,
@@ -56,13 +59,14 @@ const game = new Phaser.Game({
   scene: [BootScene, PreloadScene, MenuScene, GameScene, GameOverScene],
 });
 
-const handleResize = (): void => {
-  const w = Math.round(window.innerWidth * DPR);
-  const h = Math.round(window.innerHeight * DPR);
-  game.scale.resize(w, h);
-};
-window.addEventListener('resize', handleResize);
-window.addEventListener('orientationchange', handleResize);
+// Les insets Android peuvent changer la taille du parent sans changer
+// immédiatement celle de window (barres système, clavier, mode multifenêtre).
+const resizeObserver = new ResizeObserver(() => {
+  game.scale.getParentBounds();
+  game.scale.refresh();
+});
+resizeObserver.observe(host);
+game.events.once(Phaser.Core.Events.DESTROY, () => resizeObserver.disconnect());
 
 // Accès global pour les tests automatisés (scripts/smoke.mjs)
 (window as unknown as { __game?: Phaser.Game }).__game = game;

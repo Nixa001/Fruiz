@@ -195,8 +195,7 @@ export class MergeManager {
         });
       } else {
         const fruit = scene.spawnFruit(tier + 1, x, y);
-        // Petit pop vers le haut : la fusion "pousse" le nouveau fruit
-        Matter.Body.setVelocity(fruit.body, { x: 0, y: -3 * fruit.radiusScale });
+        // Naissance au repos : aucune impulsion vers le haut dans une calebasse pleine.
         FruitEffects.spawnPop(scene, fruit);
         fruit.express(FruitExpression.CELEBRATING, 1400);
         this.score.addMerge(tier + 1, comboN, x, y);

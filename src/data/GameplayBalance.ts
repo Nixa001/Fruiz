@@ -4,4 +4,6 @@ export const GAMEPLAY = {
   merge: { scanMs: 150, squashMs: 150, revealMs: 360, chainRevealMs: 480 },
   combo: { windowMs: 1100, max: 8, popupHoldMs: 2400 },
   drop: { cooldownMs: 220 },
+  // Réponse du suivi tactile : léger lissage visuel, sans retarder le lancer.
+  aim: { responseMs: 24 },
 } as const;

@@ -1,0 +1,8 @@
+<fr-FR>
+Les fusions deviennent plus douces !
+
+• Suppression de la poussée vers le haut à la naissance des fruits fusionnés.
+• Animation d’apparition adoucie, sans rebond ni grossissement excessif.
+
+Bon jeu sur Fruiz !
+</fr-FR>

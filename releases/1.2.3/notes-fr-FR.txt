@@ -1,0 +1,8 @@
+<fr-FR>
+• Affichage adapté aux barres système et aux encoches.
+• Compatibilité améliorée avec les tablettes, la rotation et les fenêtres redimensionnées.
+• Plateau de jeu stable pendant les changements de taille.
+• Optimisation du code Android et suppression de ressources inutilisées.
+
+Bon jeu sur Fruiz !
+</fr-FR>

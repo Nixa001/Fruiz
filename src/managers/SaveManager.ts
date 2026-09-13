@@ -18,6 +18,8 @@ const DEFAULT_FAVORITE_TIER = 7;
 
 /** Fruit sauvegardé : position normalisée dans la calebasse ([-1,1] x, [0,1] y). */
 export interface SavedFruit {
+  /** Dernier fruit lancé, encore en trajet vers le bol. Absent dans les anciennes sauvegardes. */
+  awaitingArrival?: boolean;
   tier: number;
   nx: number;
   ny: number;

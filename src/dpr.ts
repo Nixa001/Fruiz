@@ -1,8 +1,6 @@
 /**
- * Ratio pixels physiques / pixels CSS de l'écran. Le jeu tourne en mode
- * Scale.NONE + zoom inverse pour un rendu net sur écrans retina/mobile :
- * le monde (positions, physique) est donc en pixels physiques, pas CSS.
- * Les constantes physiques absolues (gravité, vitesses de particules...)
- * doivent être multipliées par DPR pour garder le même ressenti visuel.
+ * Densité utilisée pour le canvas initial : rendu net sur écran retina.
+ * Scale.FIT conserve ensuite les coordonnées du plateau et adapte sa taille CSS
+ * à la fenêtre, sans déplacer les corps physiques lors d'une rotation.
  */
 export const DPR = window.devicePixelRatio || 1;

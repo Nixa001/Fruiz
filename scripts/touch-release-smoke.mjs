@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict';
+import puppeteer from 'puppeteer-core';
+const browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,args:['--enable-unsafe-swiftshader']});
+const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const check=(name,ok)=>{assert.ok(ok,name);console.log('PASS '+name);};
+const state=()=>page.evaluate(()=>{const g=window.__game.scene.getScene('Game');return {n:g.fruits.filter(f=>!f.isRemoved).length,visible:g.previewSprite.visible,locked:g.dropLocked,aim:g.aimPointerId};});
+const start=async()=>{await page.evaluate(()=>{const m=window.__game.scene;for(const s of m.getScenes(true))m.stop(s.scene.key);m.start('Game',{resume:false});});await wait(150);};
+try {
+ await page.setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
+ await page.goto('http://127.0.0.1:5177');await page.waitForFunction(()=>window.__game?.scene.isActive('Menu'));
+ const cdp=await page.createCDPSession();
+ await start();
+ await page.evaluate(()=>{window.__game.scene.getScene('Game').mergeManager.pendingBirth=true;});
+ await page.touchscreen.tap(195,300);
+ check('fruit visible lancé immédiatement pendant naissance de fusion',(await state()).n===1);
+ await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');g.mergeManager.pendingBirth=false;g.onMergeCompleted();});
+ await start();
+ await page.evaluate(()=>{
+  const g=window.__game.scene.getScene('Game');g.matter.world.pause();
+  const k=g.scaleK;const a=g.spawnFruit(1,g.cx-8*k,g.containerBottom-40*k),b=g.spawnFruit(1,g.cx+8*k,g.containerBottom-40*k);
+  g.mergeManager.doMerge(a,b);
+  // Événement de relâchement dans la même frame pour tester la fenêtre de naissance.
+  const p={id:99,x:g.cx,y:300*k,isDown:true,wasCanceled:false};
+  g.input.emit('pointerdown',p,[]);p.isDown=false;g.input.emit('pointerup',p,[]);g.togglePause();
+ });
+ check('lancer pendant fusion conservé dans le snapshot avant naissance',await page.evaluate(()=>{
+  const s=JSON.parse(localStorage.merge_fruits_game);return s.fruits.length===3 && s.currentTier===window.__game.scene.getScene('Game').currentTier;
+ }));
+ await page.evaluate(()=>{const m=window.__game.scene;m.stop('Game');m.start('Game',{resume:true});});await wait(700);
+ check('reprise résout la fusion et conserve le lancer supplémentaire',await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');return g.fruits.filter(f=>!f.isRemoved).length===2 && g.scoreManager.score===20;}));
+ await start();
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:150,y:300,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:260,y:300,id:1}]});
+ await page.waitForFunction(()=>Math.abs(window.__game.scene.getScene('Game').previewX/window.devicePixelRatio-260)<2);
+ check('visée suit le doigt',await page.evaluate(()=>Math.abs(window.__game.scene.getScene('Game').previewX/window.devicePixelRatio-260)<2));
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:260,y:100,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ check('sortie légère de la zone de visée ne perd pas le relâchement',(await state()).n===1);
+ await start();
+ await page.touchscreen.tap(195,300);
+ await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');g.matter.world.pause();});
+ await wait(400);
+ check('prochain fruit bloqué tant que le précédent est en vol',!(await state()).visible && (await state()).locked);
+ await page.evaluate(()=>{const g=window.__game.scene.getScene('Game'),f=g.arrivingFruit;Phaser.Physics.Matter.Matter.Body.setPosition(f.body,{x:g.cx,y:f.body.position.y+g.containerTop-f.body.bounds.max.y+1});});
+ await page.waitForFunction(()=>{const g=window.__game.scene.getScene('Game');return g.previewSprite.visible && !g.dropLocked;},{timeout:3000});
+ await page.touchscreen.tap(250,300);check('deuxième fruit lâché après arrivée',(await state()).n===2);
+ await start();
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:195,y:300,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+ check('geste annulé ne lance rien',(await state()).n===0 && (await state()).aim===null);
+ await page.touchscreen.tap(195,300);check('geste suivant accepté',(await state()).n===1);
+ await start();
+ const bonus=await page.evaluate(()=>{const b=window.__game.scene.getScene('Game').jokerButton.button;return{x:b.x/window.devicePixelRatio,y:b.y/window.devicePixelRatio};});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:195,y:300,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...bonus,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await wait(350);check('relâcher sur joker ne lance rien',(await state()).n===0);
+ await start();await page.evaluate(()=>{const g=window.__game.scene.getScene('Game');g.togglePause();g.togglePause();});
+ await page.touchscreen.tap(195,300);check('nouveau geste après reprise accepté immédiatement',(await state()).n===1);
+ await wait(800);check('aucun lancer différé parasite',(await state()).n===1);
+ check('aucune erreur JavaScript',errors.length===0);
+} finally {await browser.close();}
